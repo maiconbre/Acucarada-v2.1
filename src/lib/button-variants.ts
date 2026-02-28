@@ -18,6 +18,7 @@ export const buttonVariants = cva(
         ghost: "hover:bg-secondary/50 hover:text-secondary-foreground rounded-lg",
         link: "text-primary underline-offset-4 hover:underline",
         whatsapp: "bg-brown-primary text-white hover:bg-brown-primary/90 shadow-soft hover:shadow-elegant rounded-lg",
+        easter: "bg-gradient-to-r from-pink-400 to-yellow-400 text-white hover:from-pink-500 hover:to-yellow-500 shadow-soft hover:shadow-elegant rounded-lg font-medium",
       },
       size: {
         default: "h-10 px-4 py-2",

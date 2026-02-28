@@ -73,6 +73,7 @@ export const ProductGrid = () => {
         .from("products")
         .select("id, name, description, price, image_url, category, is_featured, is_on_promotion, promotional_price, promotion_start_date, promotion_end_date")
         .eq("is_active", true)
+        .eq("is_easter_product", false)
         .limit(12); // Aumentando para ter mais produtos para ordenar
 
       if (timeoutRef.current) {
