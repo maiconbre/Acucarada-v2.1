@@ -69,6 +69,7 @@ export const ProductGridEncomenda = () => {
         .from("products")
         .select("id, name, description, price, image_url, category, is_featured, is_on_promotion, promotional_price, promotion_start_date, promotion_end_date")
         .eq("is_active", true)
+        .eq("is_easter_product", false)
         .eq("is_featured", false)
         .limit(6);
 

@@ -1,14 +1,13 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import ProductCard from "@/components/ProductCard";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Grid3X3, List, Star, TrendingUp } from "lucide-react";
+import { Search, Filter, Grid3X3, List, Star, TrendingUp, Egg } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Json } from "@/integrations/supabase/types";
+import { useNavigate } from "react-router-dom";
 
 interface Product {
   id: string;
@@ -20,7 +19,7 @@ interface Product {
   ingredientes?: string;
   validade_armazenamento_dias?: number;
   sabores?: string[];
-  sabor_images?: Json;
+  sabor_images?: Record<string, string>;
   is_featured: boolean;
   is_active: boolean;
   is_on_promotion?: boolean;
@@ -36,28 +35,24 @@ interface Category {
   is_active: boolean;
 }
 
-// Cache for products and categories - moved inside component to prevent issues
-const catalogCache = {
-  products: { data: null as Product[] | null, timestamp: 0, ttl: 3 * 60 * 1000 }, // 3 minutes
-  categories: { data: null as Category[] | null, timestamp: 0, ttl: 10 * 60 * 1000 } // 10 minutes
+const easterCatalogCache = {
+  products: { data: null as Product[] | null, timestamp: 0, ttl: 3 * 60 * 1000 },
+  categories: { data: null as Category[] | null, timestamp: 0, ttl: 10 * 60 * 1000 }
 };
 
-const Catalog = () => {
+const EasterCatalog = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
-
-  // Scroll automático para o topo ao carregar a página
+  
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []); // Executa apenas uma vez ao montar o componente
+  }, []);
+  
   const [page, setPage] = useState(0);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,27 +62,17 @@ const Catalog = () => {
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-
   useEffect(() => {
     fetchProducts();
     fetchCategories();
   }, []);
 
   useEffect(() => {
-    const searchQuery = searchParams.get('search');
-    if (searchQuery) {
-      setSearchTerm(searchQuery);
-    }
-  }, [searchParams]);
-
-  // Debounced search effect
-  useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
     
     searchTimeoutRef.current = setTimeout(() => {
-      // Reset to first page when search changes
       if (searchTerm || selectedCategory !== 'all' || priceRange !== 'all' || showReadyDelivery) {
         setPage(0);
         setHasMore(true);
@@ -99,9 +84,7 @@ const Catalog = () => {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchTerm, selectedCategory, priceRange, showReadyDelivery]); // Mantido as dependências necessárias
-
-
+  }, [searchTerm, selectedCategory, priceRange, showReadyDelivery]);
 
   const fetchProducts = async (pageNum = 0, append = false) => {
     try {
@@ -109,28 +92,26 @@ const Catalog = () => {
         setLoading(true);
         setError(null);
         
-        // Check cache for initial load
         const now = Date.now();
-        if (pageNum === 0 && catalogCache.products.data && 
-            (now - catalogCache.products.timestamp) < catalogCache.products.ttl) {
-          setProducts(catalogCache.products.data);
+        if (pageNum === 0 && easterCatalogCache.products.data && 
+            (now - easterCatalogCache.products.timestamp) < easterCatalogCache.products.ttl) {
+          setProducts(easterCatalogCache.products.data);
           setLoading(false);
           return;
         }
         
-        // Set timeout to prevent infinite loading
         fetchTimeoutRef.current = setTimeout(() => {
           setLoading(false);
           setError("Tempo limite excedido. Tente recarregar a página.");
-        }, 15000); // 15 second timeout
+        }, 15000);
       }
       
       const pageSize = 20;
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, description, price, image_url, category, is_featured, is_easter_product")
+        .select("id, name, description, price, image_url, category, is_featured, is_easter_product, is_on_promotion, promotional_price, promotion_start_date, promotion_end_date")
         .eq("is_active", true)
-        .eq("is_easter_product", false)
+        .eq("is_easter_product", true)
         .order("created_at", { ascending: false })
         .range(pageNum * pageSize, (pageNum + 1) * pageSize - 1);
 
@@ -141,17 +122,23 @@ const Catalog = () => {
 
       if (error) throw error;
 
-      const newProducts = data || [];
+      const newProducts: Product[] = (data || []).map(p => ({
+        ...p,
+        is_active: true,
+        is_on_promotion: p.is_on_promotion ?? false,
+        promotional_price: p.promotional_price ?? undefined,
+        promotion_start_date: p.promotion_start_date ?? undefined,
+        promotion_end_date: p.promotion_end_date ?? undefined,
+      }));
       setHasMore(newProducts.length === pageSize);
       
       if (append) {
-        setProducts(prev => [...prev, ...newProducts.map(product => ({...product, is_active: true}))]);
+        setProducts(prev => [...prev, ...newProducts]);
       } else {
-        setProducts(newProducts.map(product => ({...product, is_active: true})));
-        // Update cache for initial load
+        setProducts(newProducts);
         if (pageNum === 0) {
-          catalogCache.products.data = newProducts.map(product => ({...product, is_active: true}));
-          catalogCache.products.timestamp = Date.now();
+          easterCatalogCache.products.data = newProducts;
+          easterCatalogCache.products.timestamp = Date.now();
         }
       }
       
@@ -172,12 +159,10 @@ const Catalog = () => {
 
   const fetchCategories = async () => {
     try {
-      // Check cache first
       const now = Date.now();
-      if (catalogCache.categories.data && 
-          (now - catalogCache.categories.timestamp) < catalogCache.categories.ttl) {
-        setCategories(catalogCache.categories.data);
-        setCategoriesLoading(false);
+      if (easterCatalogCache.categories.data && 
+          (now - easterCatalogCache.categories.timestamp) < easterCatalogCache.categories.ttl) {
+        setCategories(easterCatalogCache.categories.data);
         return;
       }
 
@@ -191,22 +176,17 @@ const Catalog = () => {
 
       const categoriesData: Category[] = data || [];
       setCategories(categoriesData);
-      
-      // Update cache
-      catalogCache.categories.data = categoriesData;
-      catalogCache.categories.timestamp = now;
+      easterCatalogCache.categories.data = categoriesData;
+      easterCatalogCache.categories.timestamp = now;
       
     } catch (error) {
       console.error("Error fetching categories:", error);
-    } finally {
-      setCategoriesLoading(false);
     }
   };
 
   const filteredProducts = useMemo(() => {
     let filtered = products;
 
-    // Filter by search term
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -216,12 +196,10 @@ const Catalog = () => {
       );
     }
 
-    // Filter by category
     if (selectedCategory !== "all") {
       filtered = filtered.filter((product) => product.category === selectedCategory);
     }
 
-    // Filter by price range
     if (priceRange !== "all") {
       switch (priceRange) {
         case "0-10":
@@ -239,32 +217,23 @@ const Catalog = () => {
       }
     }
 
-    // Filter by ready delivery
     if (showReadyDelivery) {
       filtered = filtered.filter((product) => product.is_featured);
     }
 
-    // Sort products - SEMPRE priorizar produtos de pronta entrega (is_featured) primeiro
     const sorted = [...filtered];
     
-    // Função auxiliar para ordenação que sempre prioriza is_featured
     const sortWithPromotionAndFeaturedFirst = (a: Product, b: Product, secondarySort: (a: Product, b: Product) => number) => {
-      // Primeiro: produtos em promoção
       if (a.is_on_promotion && !b.is_on_promotion) return -1;
       if (!a.is_on_promotion && b.is_on_promotion) return 1;
-      
-      // Segundo: se ambos têm o mesmo status de promoção, featured vem primeiro
       if (a.is_featured && !b.is_featured) return -1;
       if (!a.is_featured && b.is_featured) return 1;
-      
-      // Se ambos têm o mesmo status de promoção e featured, usar ordenação secundária
       return secondarySort(a, b);
     };
     
     switch (sortBy) {
       case "newest":
-        // Manter ordenação por created_at desc, mas com promoção e featured primeiro
-        sorted.sort((a, b) => sortWithPromotionAndFeaturedFirst(a, b, () => 0)); // Já vem ordenado do banco
+        sorted.sort((a, b) => sortWithPromotionAndFeaturedFirst(a, b, () => 0));
         break;
       case "price-low":
         sorted.sort((a, b) => sortWithPromotionAndFeaturedFirst(a, b, (a, b) => {
@@ -296,7 +265,6 @@ const Catalog = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="min-h-screen gradient-soft">
@@ -329,21 +297,18 @@ const Catalog = () => {
   return (
     <div className="min-h-screen gradient-soft">
       <Header />
-      {/* Header */}
       <div className="bg-card/80 backdrop-blur-sm border-b border-border/50 pt-24 md:pt-28 md:mt-8">
         <div className="container mx-auto px-4 py-6">
           <div className="text-center mb-6 md:mb-8">
             <h1 className="text-2xl md:text-4xl lg:text-5xl font-title font-bold mb-2 md:mb-4 px-4">
-              Nosso <span className="gradient-primary bg-clip-text text-transparent">Catálogo</span>
+              Catálogo de <span className="gradient-primary bg-clip-text text-transparent">Páscoa</span>
             </h1>
             <p className="text-sm md:text-xl text-muted-foreground max-w-2xl mx-auto font-text px-4">
-              Explore nossa deliciosa seleção de doces artesanais
+              Descubra nossasdelícias exclusivas para esta época mágica do ano
             </p>
           </div>
 
-          {/* Search and Filter */}
           <div className="space-y-4">
-            {/* Search Bar */}
             <div className="relative max-w-2xl mx-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -354,11 +319,8 @@ const Catalog = () => {
               />
             </div>
 
-            {/* Filter Controls */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-              {/* Mobile Filters - Simplified Layout */}
               <div className="flex flex-col gap-3 w-full sm:hidden">
-                {/* First row: Category, Price, and View Mode */}
                 <div className="flex items-center gap-2">
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                     <SelectTrigger className="flex-1">
@@ -399,32 +361,21 @@ const Catalog = () => {
                   </Button>
                 </div>
                 
-                {/* Second row: Sort and Featured */}
                 <div className="flex items-center gap-2">
                   <Select value={sortBy} onValueChange={setSortBy}>
                     <SelectTrigger className="flex-1">
                       <SelectValue placeholder="Ordenar" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="newest">Pronta entrega primeiro</SelectItem>
+                      <SelectItem value="newest">Mais recentes</SelectItem>
                       <SelectItem value="name">Por nome (A-Z)</SelectItem>
                       <SelectItem value="price-low">Por preço (menor)</SelectItem>
                       <SelectItem value="price-high">Por preço (maior)</SelectItem>
                     </SelectContent>
                   </Select>
-                  
-                  <Button
-                    variant={showReadyDelivery ? "default" : "outline"}
-                    onClick={() => setShowReadyDelivery(!showReadyDelivery)}
-                    className="flex-1"
-                  >
-                    <Star className={`h-4 w-4 mr-2 ${showReadyDelivery ? 'fill-current' : ''}`} />
-                    Pronta entrega
-                  </Button>
                 </div>
               </div>
 
-              {/* Desktop Filters */}
               <div className="hidden sm:flex flex-row gap-3 w-auto">
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                   <SelectTrigger className="w-full sm:w-40">
@@ -460,24 +411,14 @@ const Catalog = () => {
                     <SelectValue placeholder="Ordenar" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="newest">Pronta entrega primeiro</SelectItem>
+                    <SelectItem value="newest">Mais recentes</SelectItem>
                     <SelectItem value="name">Por nome (A-Z)</SelectItem>
                     <SelectItem value="price-low">Por preço (menor)</SelectItem>
                     <SelectItem value="price-high">Por preço (maior)</SelectItem>
                   </SelectContent>
                 </Select>
-
-                <Button
-                  variant={showReadyDelivery ? "default" : "outline"}
-                  onClick={() => setShowReadyDelivery(!showReadyDelivery)}
-                  className="w-full sm:w-auto"
-                >
-                  <Star className={`h-4 w-4 mr-2 ${showReadyDelivery ? 'fill-current' : ''}`} />
-                  Pronta entrega
-                </Button>
               </div>
 
-              {/* Desktop View Mode Toggle */}
               <div className="hidden sm:flex items-center gap-1 border rounded-md p-1">
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'ghost'}
@@ -501,14 +442,21 @@ const Catalog = () => {
         </div>
       </div>
 
-      {/* Products Grid */}
       <div className="container mx-auto px-4 py-12">
         {filteredProducts.length === 0 ? (
           <div className="text-center py-20">
-            <h3 className="text-2xl font-semibold mb-4">Nenhum produto encontrado</h3>
-            <p className="text-muted-foreground">
-              Tente ajustar os filtros ou termo de busca
+            <Egg className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-2xl font-semibold mb-4">Nenhum produto de Páscoa encontrado</h3>
+            <p className="text-muted-foreground mb-6">
+              Em breve teremos deliciosos produtos de Páscoa!
             </p>
+            <Button 
+              variant="elegant"
+              onClick={() => navigate('/catalog')}
+              className="mt-4"
+            >
+              Ver Catálogo Completo
+            </Button>
           </div>
         ) : (
           <div className={`${
@@ -536,7 +484,6 @@ const Catalog = () => {
           </div>
         )}
         
-        {/* Load More Button */}
         {filteredProducts.length > 0 && hasMore && (
           <div className="text-center mt-8">
             <Button 
@@ -551,15 +498,14 @@ const Catalog = () => {
         )}
       </div>
 
-      {/* Back to Home */}
       <div className="container mx-auto px-4 pb-12">
         <div className="text-center">
           <Button 
             variant="outline" 
             size="lg"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/catalog")}
           >
-            Voltar ao Início
+            Ver Catálogo Completo
           </Button>
         </div>
       </div>
@@ -569,4 +515,4 @@ const Catalog = () => {
   );
 };
 
-export default Catalog;
+export default EasterCatalog;

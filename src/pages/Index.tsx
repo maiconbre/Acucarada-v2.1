@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { useEffect } from "react";
 import { ProductGrid } from "@/components/ProductGrid";
 import { ProductGridEncomenda } from "@/components/ProductGridEncomenda";
+import { ProductGridEaster } from "@/components/ProductGridEaster";
 import { Testimonials } from "@/components/Testimonials";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
@@ -23,6 +24,10 @@ export default function Index() {
       </div>
       
       <ErrorBoundary>
+        <ProductGridEaster />
+      </ErrorBoundary>
+
+      <ErrorBoundary>
         <ProductGrid />
       </ErrorBoundary>
       
@@ -33,7 +38,6 @@ export default function Index() {
       <ErrorBoundary>
         <Testimonials />
       </ErrorBoundary>
-      
       
       <Footer />
     </div>

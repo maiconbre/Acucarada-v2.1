@@ -42,8 +42,9 @@ interface Product {
   validade_armazenamento_dias?: number;
   sabores?: string[];
   sabor_images?: Json;
-  sabor_descriptions?: Json; // Novo campo para descrições por sabor
+  sabor_descriptions?: Json;
   is_featured: boolean;
+  is_easter_product: boolean;
   is_active: boolean;
   is_on_promotion?: boolean;
   promotional_price?: number;
@@ -86,6 +87,7 @@ export const ProductManagement = ({ products, onProductsChange }: ProductManagem
     sabor_images: {} as Json,
     sabor_descriptions: {} as Json,
     is_featured: false,
+    is_easter_product: false,
     is_active: true,
     is_on_promotion: false,
     promotional_price: "",
@@ -131,6 +133,7 @@ export const ProductManagement = ({ products, onProductsChange }: ProductManagem
       sabor_images: {} as Json,
       sabor_descriptions: {} as Json,
       is_featured: false,
+      is_easter_product: false,
       is_active: true,
       is_on_promotion: false,
       promotional_price: "",
@@ -156,6 +159,7 @@ export const ProductManagement = ({ products, onProductsChange }: ProductManagem
       sabor_images: product.sabor_images || {},
       sabor_descriptions: product.sabor_descriptions || {},
       is_featured: product.is_featured,
+      is_easter_product: product.is_easter_product || false,
       is_active: product.is_active,
       is_on_promotion: product.is_on_promotion || false,
       promotional_price: product.promotional_price?.toString() || "",
@@ -294,6 +298,7 @@ export const ProductManagement = ({ products, onProductsChange }: ProductManagem
         sabor_images: Object.keys(saborImages).length > 0 ? saborImages : null,
         sabor_descriptions: Object.keys(saborDescriptions).length > 0 ? saborDescriptions : null,
         is_featured: formData.is_featured,
+        is_easter_product: formData.is_easter_product,
         is_active: formData.is_active,
         is_on_promotion: formData.is_on_promotion,
         promotional_price: formData.is_on_promotion && formData.promotional_price ? parseFloat(formData.promotional_price) : null,
@@ -845,10 +850,26 @@ export const ProductManagement = ({ products, onProductsChange }: ProductManagem
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="is_featured"
-                  checked={formData.is_featured}
-                  onCheckedChange={(checked) => setFormData({...formData, is_featured: checked})}
-                />
-                <Label htmlFor="is_featured">Pronta entrega</Label>
+                    checked={formData.is_featured}
+                    disabled={formData.is_easter_product}
+                    onCheckedChange={(checked) => setFormData({...formData, is_featured: checked})}
+                  />
+                  <Label htmlFor="is_featured" className={formData.is_easter_product ? "text-muted-foreground" : ""}>Pronta entrega</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is_easter_product"
+                    checked={formData.is_easter_product}
+                    onCheckedChange={(checked) => {
+                      setFormData({
+                        ...formData, 
+                        is_easter_product: checked,
+                        is_featured: checked ? false : formData.is_featured
+                      });
+                    }}
+                  />
+                  <Label htmlFor="is_easter_product">Produto Páscoa</Label>
                 </div>
                 
                 <div className="flex items-center space-x-2">
