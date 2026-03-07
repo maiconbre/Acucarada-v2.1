@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/core/application/hooks/useAuth";
+import { Button } from "@/components/ui/data-display/button";
+import { Input } from "@/components/ui/forms/input";
+import { Label } from "@/components/ui/forms/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/data-display/card";
+import { useToast } from "@/hooks/ui/use-toast";
 import logoImage from "@/assets/logo.png";
 
 const Auth = () => {

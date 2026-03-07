@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import ProductCard from "@/components/ProductCard";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { supabase } from "@/core/infrastructure/supabase/client";
+import ProductCard from "@/components/product/ProductCard";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { Input } from "@/components/ui/forms/input";
+import { Button } from "@/components/ui/data-display/button";
 import { Search, Filter, Grid3X3, List, Star, TrendingUp, Egg } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/forms/select";
 import { useNavigate } from "react-router-dom";
 
 interface Product {
@@ -48,11 +48,11 @@ const EasterCatalog = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
-  
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
-  
+
   const [page, setPage] = useState(0);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +71,7 @@ const EasterCatalog = () => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
     searchTimeoutRef.current = setTimeout(() => {
       if (searchTerm || selectedCategory !== 'all' || priceRange !== 'all' || showReadyDelivery) {
         setPage(0);
@@ -91,21 +91,21 @@ const EasterCatalog = () => {
       if (!append) {
         setLoading(true);
         setError(null);
-        
+
         const now = Date.now();
-        if (pageNum === 0 && easterCatalogCache.products.data && 
-            (now - easterCatalogCache.products.timestamp) < easterCatalogCache.products.ttl) {
+        if (pageNum === 0 && easterCatalogCache.products.data &&
+          (now - easterCatalogCache.products.timestamp) < easterCatalogCache.products.ttl) {
           setProducts(easterCatalogCache.products.data);
           setLoading(false);
           return;
         }
-        
+
         fetchTimeoutRef.current = setTimeout(() => {
           setLoading(false);
           setError("Tempo limite excedido. Tente recarregar a página.");
         }, 15000);
       }
-      
+
       const pageSize = 20;
       const { data, error } = await supabase
         .from("products")
@@ -131,7 +131,7 @@ const EasterCatalog = () => {
         promotion_end_date: p.promotion_end_date ?? undefined,
       }));
       setHasMore(newProducts.length === pageSize);
-      
+
       if (append) {
         setProducts(prev => [...prev, ...newProducts]);
       } else {
@@ -141,7 +141,7 @@ const EasterCatalog = () => {
           easterCatalogCache.products.timestamp = Date.now();
         }
       }
-      
+
       setPage(pageNum);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -160,8 +160,8 @@ const EasterCatalog = () => {
   const fetchCategories = async () => {
     try {
       const now = Date.now();
-      if (easterCatalogCache.categories.data && 
-          (now - easterCatalogCache.categories.timestamp) < easterCatalogCache.categories.ttl) {
+      if (easterCatalogCache.categories.data &&
+        (now - easterCatalogCache.categories.timestamp) < easterCatalogCache.categories.ttl) {
         setCategories(easterCatalogCache.categories.data);
         return;
       }
@@ -178,7 +178,7 @@ const EasterCatalog = () => {
       setCategories(categoriesData);
       easterCatalogCache.categories.data = categoriesData;
       easterCatalogCache.categories.timestamp = now;
-      
+
     } catch (error) {
       console.error("Error fetching categories:", error);
     }
@@ -222,7 +222,7 @@ const EasterCatalog = () => {
     }
 
     const sorted = [...filtered];
-    
+
     const sortWithPromotionAndFeaturedFirst = (a: Product, b: Product, secondarySort: (a: Product, b: Product) => number) => {
       if (a.is_on_promotion && !b.is_on_promotion) return -1;
       if (!a.is_on_promotion && b.is_on_promotion) return 1;
@@ -230,7 +230,7 @@ const EasterCatalog = () => {
       if (!a.is_featured && b.is_featured) return 1;
       return secondarySort(a, b);
     };
-    
+
     switch (sortBy) {
       case "newest":
         sorted.sort((a, b) => sortWithPromotionAndFeaturedFirst(a, b, () => 0));
@@ -275,7 +275,7 @@ const EasterCatalog = () => {
               <TrendingUp className="h-12 w-12 text-destructive mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-destructive mb-2">Erro ao carregar catálogo</h3>
               <p className="text-muted-foreground mb-4">{error}</p>
-              <Button 
+              <Button
                 onClick={() => {
                   setError(null);
                   setLoading(true);
@@ -336,7 +336,7 @@ const EasterCatalog = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  
+
                   <Select value={priceRange} onValueChange={setPriceRange}>
                     <SelectTrigger className="flex-1">
                       <TrendingUp className="h-4 w-4 mr-2" />
@@ -350,7 +350,7 @@ const EasterCatalog = () => {
                       <SelectItem value="50+">Acima de R$ 50</SelectItem>
                     </SelectContent>
                   </Select>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -360,7 +360,7 @@ const EasterCatalog = () => {
                     {viewMode === 'grid' ? <List className="h-4 w-4" /> : <Grid3X3 className="h-4 w-4" />}
                   </Button>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Select value={sortBy} onValueChange={setSortBy}>
                     <SelectTrigger className="flex-1">
@@ -450,7 +450,7 @@ const EasterCatalog = () => {
             <p className="text-muted-foreground mb-6">
               Em breve teremos deliciosos produtos de Páscoa!
             </p>
-            <Button 
+            <Button
               variant="elegant"
               onClick={() => navigate('/catalog')}
               className="mt-4"
@@ -459,11 +459,10 @@ const EasterCatalog = () => {
             </Button>
           </div>
         ) : (
-          <div className={`${
-            viewMode === 'grid' 
-              ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6' 
-              : 'flex flex-col gap-4'
-          }`}>
+          <div className={`${viewMode === 'grid'
+            ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6'
+            : 'flex flex-col gap-4'
+            }`}>
             {filteredProducts.map((product) => (
               <div key={product.id} className={viewMode === 'list' ? 'w-full' : ''}>
                 <ProductCard
@@ -483,10 +482,10 @@ const EasterCatalog = () => {
             ))}
           </div>
         )}
-        
+
         {filteredProducts.length > 0 && hasMore && (
           <div className="text-center mt-8">
-            <Button 
+            <Button
               onClick={() => fetchProducts(page + 1, true)}
               disabled={loading}
               variant="outline"
@@ -500,8 +499,8 @@ const EasterCatalog = () => {
 
       <div className="container mx-auto px-4 pb-12">
         <div className="text-center">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="lg"
             onClick={() => navigate("/catalog")}
           >
@@ -509,7 +508,7 @@ const EasterCatalog = () => {
           </Button>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );

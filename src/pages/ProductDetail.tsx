@@ -1,21 +1,21 @@
 import { useState, useEffect, useRef, lazy, Suspense, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/core/infrastructure/supabase/client";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { Button } from "@/components/ui/data-display/button";
+import { Card, CardContent } from "@/components/ui/data-display/card";
+import { Badge } from "@/components/ui/data-display/badge";
 import { ArrowLeft, MessageCircle, Heart, Share2, Star, ChefHat, Calendar, Info, Clock, Utensils, Sparkles, ShoppingBag, ShoppingCart } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useAppSettings } from "@/hooks/useAppSettings";
-import { useProductAnalytics } from "@/hooks/useProductAnalytics";
-import { useCart } from "@/contexts/cart-context";
-import { Json } from "@/integrations/supabase/types";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import ErrorBoundary from "@/components/ErrorBoundary";
+import { useToast } from "@/hooks/ui/use-toast";
+import { useAppSettings } from "@/core/application/hooks/useAppSettings";
+import { useProductAnalytics } from "@/core/application/hooks/useProductAnalytics";
+import { useCart } from "@/core/infrastructure/contexts/cart-context";
+import { Json } from "@/core/infrastructure/supabase/types";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
+import ErrorBoundary from "@/components/common/ErrorBoundary";
 
-const CommentSection = lazy(() => import("@/components/CommentSection").then(module => ({ default: module.CommentSection })));
+const CommentSection = lazy(() => import("@/components/product/CommentSection").then(module => ({ default: module.CommentSection })));
 
 interface Product {
   id: string;
@@ -171,7 +171,7 @@ const ProductDetail = () => {
 
       setProduct(data);
       setActiveImage(data.image_url);
-      
+
       // Definir descrição inicial
       if (data.sabores && data.sabores.length > 0) {
         // Para produtos com sabores, não definir descrição até que um sabor seja selecionado
@@ -180,7 +180,7 @@ const ProductDetail = () => {
         // Para produtos sem sabores, usar descrição padrão
         setCurrentDescription(data.description);
       }
-      
+
       setLoading(false);
 
     } catch (error) {
@@ -257,7 +257,7 @@ const ProductDetail = () => {
         resolve();
         return;
       }
-      
+
       const img = new Image();
       img.onload = () => {
         setPreloadedImages(prev => new Set([...prev, src]));
@@ -270,9 +270,9 @@ const ProductDetail = () => {
 
   const handleFlavorClick = async (flavor: string) => {
     if (selectedFlavor === flavor || imageLoading) return;
-    
+
     setSelectedFlavor(flavor);
-    
+
     // Atualizar descrição dinâmica
     const saborDescriptions = product?.sabor_descriptions as Record<string, string> | null;
     if (saborDescriptions && saborDescriptions[flavor]) {
@@ -281,23 +281,23 @@ const ProductDetail = () => {
       // Se não há descrição específica para o sabor, usar descrição padrão
       setCurrentDescription(product?.description || '');
     }
-    
+
     const saborImages = product?.sabor_images as Record<string, string> | null;
-    const newImage = (saborImages && saborImages[flavor]) 
-      ? saborImages[flavor] 
+    const newImage = (saborImages && saborImages[flavor])
+      ? saborImages[flavor]
       : product?.image_url || '';
-    
+
     if (newImage && newImage !== activeImage) {
       setImageLoading(true);
       setImageTransitioning(true);
-      
+
       try {
         // Precarrega a nova imagem
         await preloadImage(newImage);
-        
+
         // Define a próxima imagem e inicia a transição
         setNextImage(newImage);
-        
+
         // Aguarda um pouco para a transição de fade out
         setTimeout(() => {
           setActiveImage(newImage);
@@ -311,7 +311,7 @@ const ProductDetail = () => {
         setImageLoading(false);
       }
     }
-    
+
     trackClick('flavor_selection', 'product_detail');
   };
 
@@ -372,7 +372,7 @@ const ProductDetail = () => {
             <ArrowLeft className="h-5 w-5 mr-1" />
             <span className="text-sm">Voltar</span>
           </Button>
-          
+
           <div className="flex-1 px-2">
             <h1 className="text-xl font-bold text-brown-primary font-title leading-tight">{product.name}</h1>
             <div className="flex items-center mt-1">
@@ -413,25 +413,23 @@ const ProductDetail = () => {
                 <img
                   src={activeImage || product.image_url}
                   alt={product.name}
-                  className={`w-full h-full object-cover transition-all duration-300 ease-in-out ${
-                    imageTransitioning ? 'opacity-0 scale-105' : 'opacity-100 scale-100'
-                  }`}
+                  className={`w-full h-full object-cover transition-all duration-300 ease-in-out ${imageTransitioning ? 'opacity-0 scale-105' : 'opacity-100 scale-100'
+                    }`}
                   onError={() => setActiveImage(product.image_url)}
                   loading="lazy"
                 />
-                
+
                 {/* Imagem de transição */}
                 {nextImage && (
                   <img
                     src={nextImage}
                     alt={product.name}
-                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ease-in-out ${
-                      imageTransitioning ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
-                    }`}
+                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ease-in-out ${imageTransitioning ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+                      }`}
                     loading="lazy"
                   />
                 )}
-                
+
                 {/* Loading overlay */}
                 {imageLoading && (
                   <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
@@ -585,7 +583,7 @@ const ProductDetail = () => {
                   <span className="hidden sm:inline">Adicionar ao Carrinho</span>
                   <span className="sm:hidden">Adicionar ao Carrinho</span>
                 </Button>
-                
+
                 <Button
                   onClick={handleWhatsAppOrder}
                   size="lg"
@@ -599,56 +597,54 @@ const ProductDetail = () => {
 
 
 
-            {/* Botões secundários - aparecem após os botões de ação */}
-            <div className="order-4 lg:order-4">
-              <div className="grid grid-cols-3 gap-4">
-                <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:scale-105 border-rose-200 bg-gradient-to-br from-cream-500/10 to-rose-50" onClick={handleShare}>
-                  <CardContent className="p-4 text-center">
-                    <div className="bg-gradient-to-br from-blue-100 to-blue-200 rounded-full p-3 mx-auto mb-2 w-fit">
-                      <Share2 className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <span className="text-xs font-medium text-brown-primary">Compartilhar</span>
-                  </CardContent>
-                </Card>
+              {/* Botões secundários - aparecem após os botões de ação */}
+              <div className="order-4 lg:order-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:scale-105 border-rose-200 bg-gradient-to-br from-cream-500/10 to-rose-50" onClick={handleShare}>
+                    <CardContent className="p-4 text-center">
+                      <div className="bg-gradient-to-br from-blue-100 to-blue-200 rounded-full p-3 mx-auto mb-2 w-fit">
+                        <Share2 className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <span className="text-xs font-medium text-brown-primary">Compartilhar</span>
+                    </CardContent>
+                  </Card>
 
-                <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:scale-105 border-rose-200 bg-gradient-to-br from-cream-500/10 to-rose-50" onClick={handleCommentClick}>
-                  <CardContent className="p-4 text-center">
-                    <div className="bg-gradient-to-br from-rose-100 to-rose-200 rounded-full p-3 mx-auto mb-2 w-fit">
-                      <MessageCircle className="h-5 w-5 text-rose-primary" />
-                    </div>
-                    <span className="text-sm font-medium text-brown-primary">Comentar</span>
-                  </CardContent>
-                </Card>
+                  <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:scale-105 border-rose-200 bg-gradient-to-br from-cream-500/10 to-rose-50" onClick={handleCommentClick}>
+                    <CardContent className="p-4 text-center">
+                      <div className="bg-gradient-to-br from-rose-100 to-rose-200 rounded-full p-3 mx-auto mb-2 w-fit">
+                        <MessageCircle className="h-5 w-5 text-rose-primary" />
+                      </div>
+                      <span className="text-sm font-medium text-brown-primary">Comentar</span>
+                    </CardContent>
+                  </Card>
 
-                <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:scale-105 border-rose-200 bg-gradient-to-br from-cream-500/10 to-rose-50" onClick={handleLikeClick}>
-                  <CardContent className="p-4 text-center">
-                    <div className={`rounded-full p-3 mx-auto mb-2 w-fit transition-all duration-300 ${
-                      analytics.is_liked
+                  <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:scale-105 border-rose-200 bg-gradient-to-br from-cream-500/10 to-rose-50" onClick={handleLikeClick}>
+                    <CardContent className="p-4 text-center">
+                      <div className={`rounded-full p-3 mx-auto mb-2 w-fit transition-all duration-300 ${analytics.is_liked
                         ? 'bg-gradient-to-br from-rose-100 to-rose-200'
                         : 'bg-gradient-to-br from-gray-100 to-gray-200'
-                      }`}>
-                      <Heart className={`h-5 w-5 transition-all duration-300 ${
-                        analytics.is_liked ? 'fill-current text-rose-primary' : 'text-gray-600'
-                        }`} />
-                    </div>
-                    <span className="text-sm font-medium text-brown-primary">Curtir</span>
-                  </CardContent>
-                </Card>
+                        }`}>
+                        <Heart className={`h-5 w-5 transition-all duration-300 ${analytics.is_liked ? 'fill-current text-rose-primary' : 'text-gray-600'
+                          }`} />
+                      </div>
+                      <span className="text-sm font-medium text-brown-primary">Curtir</span>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
-            </div>
 
 
 
-            <div ref={commentSectionRef} className="order-5 lg:order-5">
-              <ErrorBoundary>
-                <Suspense fallback={<LoadingSpinner size="md" />}>
-                  <CommentSection productId={product.id} />
-                </Suspense>
-              </ErrorBoundary>
+              <div ref={commentSectionRef} className="order-5 lg:order-5">
+                <ErrorBoundary>
+                  <Suspense fallback={<LoadingSpinner size="md" />}>
+                    <CommentSection productId={product.id} />
+                  </Suspense>
+                </ErrorBoundary>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
       <Footer />
     </div>

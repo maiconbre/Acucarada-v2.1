@@ -1,20 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ProductManagement } from "@/components/admin/ProductManagement";
-import { CategoryManagement } from "@/components/admin/CategoryManagement";
-import AnalyticsPanel from "@/components/admin/AnalyticsPanel";
-import Settings from "@/components/admin/Settings";
-import MobileBottomNav from "@/components/admin/MobileBottomNav";
-import MobileDashboard from "@/components/admin/MobileDashboard";
+import { useAuth } from "@/core/application/hooks/useAuth";
+import { supabase } from "@/core/infrastructure/supabase/client";
+import { Button } from "@/components/ui/data-display/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/data-display/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/navigation/tabs";
+import { ProductManagement } from "@/components/admin/management/ProductManagement";
+import { CategoryManagement } from "@/components/admin/management/CategoryManagement";
+import AnalyticsPanel from "@/components/admin/analytics/AnalyticsPanel";
+import Settings from "@/components/admin/settings/Settings";
+import MobileBottomNav from "@/components/admin/mobile/MobileBottomNav";
+import MobileDashboard from "@/components/admin/mobile/MobileDashboard";
 import { LogOut, Package, BarChart, Tag, TrendingUp, Settings as SettingsIcon, Menu, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Json } from "@/integrations/supabase/types";
+import { useToast } from "@/hooks/ui/use-toast";
+import { useIsMobile } from "@/hooks/ui/use-mobile";
+import { Json } from "@/core/infrastructure/supabase/types";
 
 interface Product {
   id: string;
@@ -130,22 +130,19 @@ const Admin = () => {
     switch (activeTab) {
       case "dashboard":
         return (
-          <MobileDashboard 
-            products={products} 
+          <MobileDashboard
+            products={products}
             onNavigate={handleTabChange}
             onQuickAction={handleQuickAction}
           />
         );
       case "products":
         return (
-          <ProductManagement 
-            products={products} 
-            onProductsChange={fetchProducts}
-          />
+          <ProductManagement />
         );
       case "categories":
         return (
-          <CategoryManagement 
+          <CategoryManagement
             onCategoriesChange={fetchProducts}
           />
         );
@@ -155,8 +152,8 @@ const Admin = () => {
         return <Settings />;
       default:
         return (
-          <MobileDashboard 
-            products={products} 
+          <MobileDashboard
+            products={products}
             onNavigate={handleTabChange}
             onQuickAction={handleQuickAction}
           />
@@ -193,42 +190,42 @@ const Admin = () => {
                 </p>
               </div>
             </div>
-            
+
             {/* Desktop Actions */}
             <div className="hidden md:flex items-center gap-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => navigate("/")} 
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/")}
                 className="transition-all duration-200 hover:scale-105 hover:shadow-md"
               >
                 Ver Site
               </Button>
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={handleSignOut} 
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleSignOut}
                 className="transition-all duration-200 hover:scale-105 hover:shadow-md"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Sair
               </Button>
             </div>
-            
+
             {/* Mobile Actions */}
             <div className="flex md:hidden items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => navigate("/")} 
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/")}
                 className="px-3"
               >
                 Site
               </Button>
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={handleSignOut} 
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleSignOut}
                 className="px-3"
               >
                 <LogOut className="h-4 w-4" />
@@ -243,11 +240,11 @@ const Admin = () => {
         <div className="container mx-auto px-4 py-4 pb-20">
           {renderMobileContent()}
         </div>
-        
+
         {/* Mobile Bottom Navigation */}
-        <MobileBottomNav 
-          activeTab={activeTab} 
-          onTabChange={handleTabChange} 
+        <MobileBottomNav
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
         />
       </div>
 
@@ -316,24 +313,21 @@ const Admin = () => {
                 Configurações
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="products" className="mt-6">
-              <ProductManagement 
-                products={products} 
-                onProductsChange={fetchProducts}
-              />
+              <ProductManagement />
             </TabsContent>
-            
+
             <TabsContent value="categories" className="mt-6">
-              <CategoryManagement 
+              <CategoryManagement
                 onCategoriesChange={fetchProducts}
               />
             </TabsContent>
-            
+
             <TabsContent value="analytics" className="mt-6">
               <AnalyticsPanel />
             </TabsContent>
-            
+
             <TabsContent value="settings" className="mt-6">
               <Settings />
             </TabsContent>

@@ -1,76 +1,41 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import ProductCard from "@/components/ProductCard";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Search, Filter, Grid3X3, List, Star, TrendingUp } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect } from "react";
+import ProductCard from "@/components/product/ProductCard";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { Input } from "@/components/ui/forms/input";
+import { Button } from "@/components/ui/data-display/button";
+import { Search, Filter, Grid3X3, List, Star, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/forms/select";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Json } from "@/integrations/supabase/types";
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image_url: string;
-  category: string;
-  ingredientes?: string;
-  validade_armazenamento_dias?: number;
-  sabores?: string[];
-  sabor_images?: Json;
-  is_featured: boolean;
-  is_active: boolean;
-  is_on_promotion?: boolean;
-  promotional_price?: number;
-  promotion_start_date?: string;
-  promotion_end_date?: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  description: string | null;
-  is_active: boolean;
-}
-
-// Cache for products and categories - moved inside component to prevent issues
-const catalogCache = {
-  products: { data: null as Product[] | null, timestamp: 0, ttl: 3 * 60 * 1000 }, // 3 minutes
-  categories: { data: null as Category[] | null, timestamp: 0, ttl: 10 * 60 * 1000 } // 10 minutes
-};
+import { useCatalogProducts } from "@/core/application/hooks/useCatalogProducts";
+import { useCatalogFilters } from "@/core/application/hooks/useCatalogFilters";
 
 const Catalog = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [products, setProducts] = useState<Product[]>([]);
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
+  const { products, categories, loading, error, refetch } = useCatalogProducts();
+
+  const {
+    searchTerm,
+    setSearchTerm,
+    selectedCategory,
+    setSelectedCategory,
+    priceRange,
+    setPriceRange,
+    showReadyDelivery,
+    setShowReadyDelivery,
+    sortBy,
+    setSortBy,
+    viewMode,
+    setViewMode,
+    filteredProducts,
+    pagination,
+  } = useCatalogFilters({ products, pageSize: 12 });
 
   // Scroll automático para o topo ao carregar a página
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []); // Executa apenas uma vez ao montar o componente
-  const [page, setPage] = useState(0);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [priceRange, setPriceRange] = useState("all");
-  const [showReadyDelivery, setShowReadyDelivery] = useState(false);
-  const [sortBy, setSortBy] = useState("newest");
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
-
-  useEffect(() => {
-    fetchProducts();
-    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -78,215 +43,7 @@ const Catalog = () => {
     if (searchQuery) {
       setSearchTerm(searchQuery);
     }
-  }, [searchParams]);
-
-  // Debounced search effect
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    searchTimeoutRef.current = setTimeout(() => {
-      // Reset to first page when search changes
-      if (searchTerm || selectedCategory !== 'all' || priceRange !== 'all' || showReadyDelivery) {
-        setPage(0);
-        setHasMore(true);
-      }
-    }, 300);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchTerm, selectedCategory, priceRange, showReadyDelivery]); // Mantido as dependências necessárias
-
-
-
-  const fetchProducts = async (pageNum = 0, append = false) => {
-    try {
-      if (!append) {
-        setLoading(true);
-        setError(null);
-        
-        // Check cache for initial load
-        const now = Date.now();
-        if (pageNum === 0 && catalogCache.products.data && 
-            (now - catalogCache.products.timestamp) < catalogCache.products.ttl) {
-          setProducts(catalogCache.products.data);
-          setLoading(false);
-          return;
-        }
-        
-        // Set timeout to prevent infinite loading
-        fetchTimeoutRef.current = setTimeout(() => {
-          setLoading(false);
-          setError("Tempo limite excedido. Tente recarregar a página.");
-        }, 15000); // 15 second timeout
-      }
-      
-      const pageSize = 20;
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, name, description, price, image_url, category, is_featured, is_easter_product")
-        .eq("is_active", true)
-        .eq("is_easter_product", false)
-        .order("created_at", { ascending: false })
-        .range(pageNum * pageSize, (pageNum + 1) * pageSize - 1);
-
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-        fetchTimeoutRef.current = null;
-      }
-
-      if (error) throw error;
-
-      const newProducts = data || [];
-      setHasMore(newProducts.length === pageSize);
-      
-      if (append) {
-        setProducts(prev => [...prev, ...newProducts.map(product => ({...product, is_active: true}))]);
-      } else {
-        setProducts(newProducts.map(product => ({...product, is_active: true})));
-        // Update cache for initial load
-        if (pageNum === 0) {
-          catalogCache.products.data = newProducts.map(product => ({...product, is_active: true}));
-          catalogCache.products.timestamp = Date.now();
-        }
-      }
-      
-      setPage(pageNum);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      if (!append) {
-        setError("Erro ao carregar produtos. Tente novamente.");
-      }
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-        fetchTimeoutRef.current = null;
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      // Check cache first
-      const now = Date.now();
-      if (catalogCache.categories.data && 
-          (now - catalogCache.categories.timestamp) < catalogCache.categories.ttl) {
-        setCategories(catalogCache.categories.data);
-        setCategoriesLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("categories")
-        .select("id, name, description, is_active")
-        .eq("is_active", true)
-        .order("name", { ascending: true });
-
-      if (error) throw error;
-
-      const categoriesData: Category[] = data || [];
-      setCategories(categoriesData);
-      
-      // Update cache
-      catalogCache.categories.data = categoriesData;
-      catalogCache.categories.timestamp = now;
-      
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-    } finally {
-      setCategoriesLoading(false);
-    }
-  };
-
-  const filteredProducts = useMemo(() => {
-    let filtered = products;
-
-    // Filter by search term
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (product) =>
-          product.name.toLowerCase().includes(searchLower) ||
-          product.description?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Filter by category
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter((product) => product.category === selectedCategory);
-    }
-
-    // Filter by price range
-    if (priceRange !== "all") {
-      switch (priceRange) {
-        case "0-10":
-          filtered = filtered.filter((product) => product.price <= 10);
-          break;
-        case "10-25":
-          filtered = filtered.filter((product) => product.price > 10 && product.price <= 25);
-          break;
-        case "25-50":
-          filtered = filtered.filter((product) => product.price > 25 && product.price <= 50);
-          break;
-        case "50+":
-          filtered = filtered.filter((product) => product.price > 50);
-          break;
-      }
-    }
-
-    // Filter by ready delivery
-    if (showReadyDelivery) {
-      filtered = filtered.filter((product) => product.is_featured);
-    }
-
-    // Sort products - SEMPRE priorizar produtos de pronta entrega (is_featured) primeiro
-    const sorted = [...filtered];
-    
-    // Função auxiliar para ordenação que sempre prioriza is_featured
-    const sortWithPromotionAndFeaturedFirst = (a: Product, b: Product, secondarySort: (a: Product, b: Product) => number) => {
-      // Primeiro: produtos em promoção
-      if (a.is_on_promotion && !b.is_on_promotion) return -1;
-      if (!a.is_on_promotion && b.is_on_promotion) return 1;
-      
-      // Segundo: se ambos têm o mesmo status de promoção, featured vem primeiro
-      if (a.is_featured && !b.is_featured) return -1;
-      if (!a.is_featured && b.is_featured) return 1;
-      
-      // Se ambos têm o mesmo status de promoção e featured, usar ordenação secundária
-      return secondarySort(a, b);
-    };
-    
-    switch (sortBy) {
-      case "newest":
-        // Manter ordenação por created_at desc, mas com promoção e featured primeiro
-        sorted.sort((a, b) => sortWithPromotionAndFeaturedFirst(a, b, () => 0)); // Já vem ordenado do banco
-        break;
-      case "price-low":
-        sorted.sort((a, b) => sortWithPromotionAndFeaturedFirst(a, b, (a, b) => {
-          const priceA = a.is_on_promotion && a.promotional_price ? a.promotional_price : a.price;
-          const priceB = b.is_on_promotion && b.promotional_price ? b.promotional_price : b.price;
-          return priceA - priceB;
-        }));
-        break;
-      case "price-high":
-        sorted.sort((a, b) => sortWithPromotionAndFeaturedFirst(a, b, (a, b) => {
-          const priceA = a.is_on_promotion && a.promotional_price ? a.promotional_price : a.price;
-          const priceB = b.is_on_promotion && b.promotional_price ? b.promotional_price : b.price;
-          return priceB - priceA;
-        }));
-        break;
-      case "name":
-        sorted.sort((a, b) => sortWithPromotionAndFeaturedFirst(a, b, (a, b) => a.name.localeCompare(b.name)));
-        break;
-    }
-
-    return sorted;
-  }, [products, searchTerm, selectedCategory, priceRange, showReadyDelivery, sortBy]);
+  }, [searchParams, setSearchTerm]);
 
   if (loading) {
     return (
@@ -296,7 +53,6 @@ const Catalog = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="min-h-screen gradient-soft">
@@ -307,12 +63,8 @@ const Catalog = () => {
               <TrendingUp className="h-12 w-12 text-destructive mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-destructive mb-2">Erro ao carregar catálogo</h3>
               <p className="text-muted-foreground mb-4">{error}</p>
-              <Button 
-                onClick={() => {
-                  setError(null);
-                  setLoading(true);
-                  fetchProducts();
-                }}
+              <Button
+                onClick={refetch}
                 variant="outline"
                 className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
               >
@@ -341,9 +93,7 @@ const Catalog = () => {
             </p>
           </div>
 
-          {/* Search and Filter */}
           <div className="space-y-4">
-            {/* Search Bar */}
             <div className="relative max-w-2xl mx-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -354,11 +104,8 @@ const Catalog = () => {
               />
             </div>
 
-            {/* Filter Controls */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-              {/* Mobile Filters - Simplified Layout */}
               <div className="flex flex-col gap-3 w-full sm:hidden">
-                {/* First row: Category, Price, and View Mode */}
                 <div className="flex items-center gap-2">
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                     <SelectTrigger className="flex-1">
@@ -374,7 +121,7 @@ const Catalog = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  
+
                   <Select value={priceRange} onValueChange={setPriceRange}>
                     <SelectTrigger className="flex-1">
                       <TrendingUp className="h-4 w-4 mr-2" />
@@ -388,7 +135,7 @@ const Catalog = () => {
                       <SelectItem value="50+">Acima de R$ 50</SelectItem>
                     </SelectContent>
                   </Select>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -398,8 +145,7 @@ const Catalog = () => {
                     {viewMode === 'grid' ? <List className="h-4 w-4" /> : <Grid3X3 className="h-4 w-4" />}
                   </Button>
                 </div>
-                
-                {/* Second row: Sort and Featured */}
+
                 <div className="flex items-center gap-2">
                   <Select value={sortBy} onValueChange={setSortBy}>
                     <SelectTrigger className="flex-1">
@@ -412,7 +158,7 @@ const Catalog = () => {
                       <SelectItem value="price-high">Por preço (maior)</SelectItem>
                     </SelectContent>
                   </Select>
-                  
+
                   <Button
                     variant={showReadyDelivery ? "default" : "outline"}
                     onClick={() => setShowReadyDelivery(!showReadyDelivery)}
@@ -501,7 +247,6 @@ const Catalog = () => {
         </div>
       </div>
 
-      {/* Products Grid */}
       <div className="container mx-auto px-4 py-12">
         {filteredProducts.length === 0 ? (
           <div className="text-center py-20">
@@ -511,11 +256,10 @@ const Catalog = () => {
             </p>
           </div>
         ) : (
-          <div className={`${
-            viewMode === 'grid' 
-              ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6' 
-              : 'flex flex-col gap-4'
-          }`}>
+          <div className={`${viewMode === 'grid'
+            ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6'
+            : 'flex flex-col gap-4'
+            }`}>
             {filteredProducts.map((product) => (
               <div key={product.id} className={viewMode === 'list' ? 'w-full' : ''}>
                 <ProductCard
@@ -535,27 +279,51 @@ const Catalog = () => {
             ))}
           </div>
         )}
-        
-        {/* Load More Button */}
-        {filteredProducts.length > 0 && hasMore && (
-          <div className="text-center mt-8">
-            <Button 
-              onClick={() => fetchProducts(page + 1, true)}
-              disabled={loading}
+
+        {/* Pagination UI */}
+        {pagination.totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-12">
+            <Button
+              onClick={pagination.prevPage}
+              disabled={!pagination.hasPrevPage}
               variant="outline"
-              className="px-8 py-2"
+              size="sm"
+              className="gap-2"
             >
-              {loading ? "Carregando..." : "Carregar Mais"}
+              <ChevronLeft className="h-4 w-4" /> Anterior
+            </Button>
+
+            <div className="flex items-center gap-2">
+              {[...Array(pagination.totalPages)].map((_, idx) => (
+                <Button
+                  key={idx}
+                  onClick={() => pagination.setPage(idx)}
+                  variant={idx === pagination.currentPage ? "default" : "ghost"}
+                  size="sm"
+                  className={`w-8 h-8 p-0 ${idx === pagination.currentPage ? "bg-rose-primary" : ""}`}
+                >
+                  {idx + 1}
+                </Button>
+              ))}
+            </div>
+
+            <Button
+              onClick={pagination.nextPage}
+              disabled={!pagination.hasNextPage}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              Próxima <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         )}
       </div>
 
-      {/* Back to Home */}
       <div className="container mx-auto px-4 pb-12">
         <div className="text-center">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="lg"
             onClick={() => navigate("/")}
           >
@@ -563,7 +331,7 @@ const Catalog = () => {
           </Button>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );
