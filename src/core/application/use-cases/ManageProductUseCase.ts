@@ -21,7 +21,7 @@ export interface CreateProductDTO {
     promotion_end_date?: string | null;
 }
 
-export interface UpdateProductDTO extends Partial<CreateProductDTO> { }
+export type UpdateProductDTO = Partial<CreateProductDTO>;
 
 export type ProductActionType = 'toggle' | 'soft_delete' | 'hard_delete';
 

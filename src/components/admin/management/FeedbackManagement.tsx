@@ -7,10 +7,10 @@ import { Label } from "@/components/ui/forms/label";
 import { Textarea } from "@/components/ui/forms/textarea";
 import { Switch } from "@/components/ui/forms/switch";
 import { useToast } from "@/hooks/ui/use-toast";
-import { 
-  Save, 
-  RefreshCw, 
-  Trash2, 
+import {
+  Save,
+  RefreshCw,
+  Trash2,
   Star,
   MessageSquare,
   Image as ImageIcon
@@ -39,7 +39,7 @@ const FeedbackManagement = () => {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
   const { user, session } = useAuth();
-  
+
   const [newFeedback, setNewFeedback] = useState<{
     customer_name: string;
     feedback_text: string;
@@ -54,6 +54,7 @@ const FeedbackManagement = () => {
 
   useEffect(() => {
     loadFeedbacks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadFeedbacks = async () => {
@@ -63,7 +64,7 @@ const FeedbackManagement = () => {
         .from('feedbacks')
         .select('*')
         .order('display_order', { ascending: true });
-      
+
       if (error) throw error;
       setFeedbacks(data || []);
     } catch (error) {
@@ -97,7 +98,7 @@ const FeedbackManagement = () => {
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
+
     if (!file.type.startsWith('image/')) {
       toast({
         variant: 'destructive',
@@ -106,12 +107,12 @@ const FeedbackManagement = () => {
       });
       return;
     }
-    
+
     setUploading(true);
     try {
       // Converter para WebP usando a função centralizada
       const webpFile = await handleWebPConversion(file);
-      
+
       // Upload para Supabase Storage
       const fileName = `feedback-${Date.now()}.webp`;
       const { data, error } = await supabase.storage
@@ -120,16 +121,16 @@ const FeedbackManagement = () => {
           contentType: 'image/webp',
           cacheControl: '3600'
         });
-      
+
       if (error) throw error;
-      
+
       // Obter URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('feedback-images')
         .getPublicUrl(data.path);
-      
+
       setNewFeedback(prev => ({ ...prev, image_url: publicUrl }));
-      
+
       toast({
         title: 'Sucesso',
         description: 'Imagem carregada e convertida para WebP com sucesso'
@@ -165,19 +166,19 @@ const FeedbackManagement = () => {
       });
       return;
     }
-    
+
     setLoading(true);
     try {
       // Verificar sessão atual
       const { data: { session: currentSession } } = await supabase.auth.getSession();
-      
+
       if (!currentSession) {
         throw new Error('Sessão expirada. Faça login novamente.');
       }
 
       // Determinar próxima ordem de exibição
       const maxOrder = Math.max(...feedbacks.map(f => f.display_order || 0), 0);
-      
+
       const feedbackData: FeedbackInsert = {
         customer_name: newFeedback.customer_name.trim(),
         feedback_text: newFeedback.feedback_text.trim(),
@@ -185,16 +186,16 @@ const FeedbackManagement = () => {
         is_active: newFeedback.is_active,
         display_order: maxOrder + 1
       };
-      
+
       console.log('Tentando inserir feedback:', feedbackData);
       console.log('Usuário atual:', currentSession.user.email);
       console.log('Role atual:', currentSession.user.role);
-      
+
       const { data, error } = await supabase
         .from('feedbacks')
         .insert([feedbackData])
         .select();
-      
+
       if (error) {
         console.error('Erro detalhado do Supabase:', {
           message: error.message,
@@ -204,9 +205,9 @@ const FeedbackManagement = () => {
         });
         throw error;
       }
-      
+
       console.log('Feedback inserido com sucesso:', data);
-      
+
       // Resetar formulário
       setNewFeedback({
         customer_name: '',
@@ -214,19 +215,19 @@ const FeedbackManagement = () => {
         image_url: '',
         is_active: true
       });
-      
+
       // Recarregar feedbacks
       await loadFeedbacks();
-      
+
       toast({
         title: 'Sucesso',
         description: 'Feedback adicionado com sucesso'
       });
     } catch (error: unknown) {
       console.error('Erro ao salvar feedback:', error);
-      
+
       let errorMessage = 'Erro ao salvar feedback';
-      
+
       if (error && typeof error === 'object' && 'message' in error) {
         const errorObj = error as { message?: string; code?: string };
         if (errorObj.message?.includes('403') || errorObj.code === '42501') {
@@ -237,7 +238,7 @@ const FeedbackManagement = () => {
           errorMessage = errorObj.message;
         }
       }
-      
+
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -256,11 +257,11 @@ const FeedbackManagement = () => {
         .from('feedbacks')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw error;
-      
+
       await loadFeedbacks();
-      
+
       toast({
         title: 'Sucesso',
         description: 'Feedback excluído com sucesso'
@@ -316,7 +317,7 @@ const FeedbackManagement = () => {
               </p>
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="feedback_text">Texto do Feedback *</Label>
             <Textarea
@@ -327,20 +328,20 @@ const FeedbackManagement = () => {
               rows={3}
             />
           </div>
-          
+
           {newFeedback.image_url && (
             <div className="space-y-2">
               <Label>Preview da Imagem</Label>
               <div className="border rounded-lg p-2">
-                <img 
-                  src={newFeedback.image_url} 
-                  alt="Preview" 
+                <img
+                  src={newFeedback.image_url}
+                  alt="Preview"
                   className="max-w-xs max-h-32 object-contain rounded"
                 />
               </div>
             </div>
           )}
-          
+
           <div className="flex items-center space-x-2">
             <Switch
               id="is_active"
@@ -349,9 +350,9 @@ const FeedbackManagement = () => {
             />
             <Label htmlFor="is_active">Ativo (visível no site)</Label>
           </div>
-          
-          <Button 
-            onClick={handleSaveFeedback} 
+
+          <Button
+            onClick={handleSaveFeedback}
             disabled={loading || uploading}
             className="w-full sm:w-auto"
           >
@@ -395,11 +396,10 @@ const FeedbackManagement = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="font-semibold">{feedback.customer_name}</h4>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          feedback.is_active 
-                            ? 'bg-green-100 text-green-800' 
+                        <span className={`px-2 py-1 rounded-full text-xs ${feedback.is_active
+                            ? 'bg-green-100 text-green-800'
                             : 'bg-gray-100 text-gray-800'
-                        }`}>
+                          }`}>
                           {feedback.is_active ? 'Ativo' : 'Inativo'}
                         </span>
                       </div>
@@ -413,7 +413,7 @@ const FeedbackManagement = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -433,7 +433,7 @@ const FeedbackManagement = () => {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction 
+                            <AlertDialogAction
                               onClick={() => deleteFeedback(feedback.id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
@@ -444,11 +444,11 @@ const FeedbackManagement = () => {
                       </AlertDialog>
                     </div>
                   </div>
-                  
+
                   {feedback.image_url && (
                     <div className="border-t pt-3">
-                      <img 
-                        src={feedback.image_url} 
+                      <img
+                        src={feedback.image_url}
                         alt={`Feedback de ${feedback.customer_name}`}
                         className="max-w-xs max-h-40 object-contain rounded border"
                       />

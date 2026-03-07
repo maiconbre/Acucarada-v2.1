@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { SupabaseProductRepository } from '@/core/data/repositories/SupabaseProductRepository';
 import { Product } from '@/core/domain/entities/Product';
 import { ProductFilters, PaginatedResult } from '@/core/domain/repositories/IProductRepository';
@@ -10,7 +10,7 @@ export const useProductsPaginated = (initialLimit = 12) => {
     const [error, setError] = useState<string | null>(null);
 
     const { toast } = useToast();
-    const productRepository = new SupabaseProductRepository();
+    const productRepository = useMemo(() => new SupabaseProductRepository(), []);
 
     const fetchProducts = useCallback(async (page: number, filters?: ProductFilters) => {
         setLoading(true);
@@ -32,7 +32,7 @@ export const useProductsPaginated = (initialLimit = 12) => {
         } finally {
             setLoading(false);
         }
-    }, [initialLimit, toast]);
+    }, [initialLimit, toast, productRepository]);
 
     return {
         data,

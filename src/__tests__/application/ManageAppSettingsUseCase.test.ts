@@ -4,7 +4,7 @@ import { createMockAppSettingsRepository, mockAppSetting, mockAppSettings } from
 
 describe('ManageAppSettingsUseCase', () => {
     let useCase: ManageAppSettingsUseCase;
-    let mockRepo: any;
+    let mockRepo: ReturnType<typeof createMockAppSettingsRepository>;
 
     beforeEach(() => {
         mockRepo = createMockAppSettingsRepository();

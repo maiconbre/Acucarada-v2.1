@@ -4,7 +4,7 @@ import { createMockProductRepository, mockProduct } from '@/__tests__/mocks/repo
 
 describe('GetCatalogProductsUseCase', () => {
     let useCase: GetCatalogProductsUseCase;
-    let mockRepo: any;
+    let mockRepo: ReturnType<typeof createMockProductRepository>;
 
     beforeEach(() => {
         mockRepo = createMockProductRepository();

@@ -24,9 +24,10 @@ interface ProductCardProps {
   promotional_price?: number;
   promotion_start_date?: string;
   promotion_end_date?: string;
+  is_easter_product?: boolean;
 }
 
-const ProductCard = memo(({ id, name, description, price, image_url, category, is_featured, is_on_promotion, promotional_price, promotion_start_date, promotion_end_date }: ProductCardProps) => {
+const ProductCard = memo(({ id, name, description, price, image_url, category, is_featured, is_on_promotion, promotional_price, promotion_start_date, promotion_end_date, is_easter_product }: ProductCardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { analytics, toggleLike, trackShare, trackClick, loading: analyticsLoading } = useProductAnalytics(id);
@@ -47,7 +48,7 @@ const ProductCard = memo(({ id, name, description, price, image_url, category, i
 
 
   return (
-    <Card 
+    <Card
       className="group overflow-hidden border-0 shadow-soft hover:shadow-elegant transition-all duration-300 hover:-translate-y-1 bg-card/80 backdrop-blur-sm cursor-pointer product-card hover:scale-[1.02] transform-gpu"
       onClick={handleCardClick}
     >
@@ -67,9 +68,15 @@ const ProductCard = memo(({ id, name, description, price, image_url, category, i
               🔥 Promoção
             </span>
           )}
-          <span className="bg-primary-soft/90 backdrop-blur-sm text-primary text-xs px-3 py-1 rounded-full font-medium">
-            {is_featured ? 'Pronta entrega' : 'Encomenda'}
-          </span>
+          {is_easter_product ? (
+            <span className="bg-rose-500/90 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1">
+              🐰 Páscoa
+            </span>
+          ) : (
+            <span className="bg-primary-soft/90 backdrop-blur-sm text-primary text-xs px-3 py-1 rounded-full font-medium">
+              {is_featured ? 'Pronta entrega' : 'Sob encomenda'}
+            </span>
+          )}
         </div>
       </div>
       <CardContent className="p-3 md:p-6">
@@ -98,9 +105,8 @@ const ProductCard = memo(({ id, name, description, price, image_url, category, i
             <Button
               variant="ghost"
               size="sm"
-              className={`p-2 h-8 w-8 md:h-auto md:w-auto md:p-1 transition-all duration-200 rounded-full md:rounded-md transform hover:scale-110 ${
-                analytics.is_liked ? 'text-red-500 bg-red-50' : 'text-muted-foreground hover:text-red-500 hover:bg-red-50'
-              }`}
+              className={`p-2 h-8 w-8 md:h-auto md:w-auto md:p-1 transition-all duration-200 rounded-full md:rounded-md transform hover:scale-110 ${analytics.is_liked ? 'text-red-500 bg-red-50' : 'text-muted-foreground hover:text-red-500 hover:bg-red-50'
+                }`}
               onClick={handleLikeClick}
               disabled={analyticsLoading}
             >

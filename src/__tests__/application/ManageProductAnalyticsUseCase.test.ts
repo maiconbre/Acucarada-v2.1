@@ -4,7 +4,7 @@ import { createMockProductAnalyticsRepository, mockProductAnalytics, mockLikeSta
 
 describe('ManageProductAnalyticsUseCase', () => {
     let useCase: ManageProductAnalyticsUseCase;
-    let mockRepo: any;
+    let mockRepo: ReturnType<typeof createMockProductAnalyticsRepository>;
 
     beforeEach(() => {
         mockRepo = createMockProductAnalyticsRepository();

@@ -135,6 +135,53 @@ export const ProductFormModal = ({
                         </div>
                     </div>
 
+                    {/* Seção de Flags/Status */}
+                    <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                        <Label className="text-base font-medium">Status e Categorização</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+                            <div className="flex items-center justify-between space-x-2 border p-3 rounded-md bg-background">
+                                <Label htmlFor="active-toggle" className="cursor-pointer">Produto Ativo</Label>
+                                <Switch
+                                    id="active-toggle"
+                                    checked={formData.is_active}
+                                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between space-x-2 border p-3 rounded-md bg-background">
+                                <Label htmlFor="featured-toggle" className="cursor-pointer flex flex-col">
+                                    <span>Pronta Entrega</span>
+                                </Label>
+                                <Switch
+                                    id="featured-toggle"
+                                    checked={formData.is_featured}
+                                    onCheckedChange={(checked) => {
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            is_featured: checked,
+                                            ...(checked ? { is_easter_product: false } : {})
+                                        }));
+                                    }}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between space-x-2 border p-3 rounded-md bg-background">
+                                <Label htmlFor="easter-toggle" className="cursor-pointer flex flex-col">
+                                    <span>Páscoa</span>
+                                </Label>
+                                <Switch
+                                    id="easter-toggle"
+                                    checked={formData.is_easter_product}
+                                    onCheckedChange={(checked) => {
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            is_easter_product: checked,
+                                            ...(checked ? { is_featured: false } : {})
+                                        }));
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Seção Promoção */}
                     <div className="space-y-4 p-4 border rounded-lg bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20">
                         <div className="flex items-center justify-between">

@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ManageProductUseCase, CreateProductDTO } from '@/core/application/use-cases/ManageProductUseCase';
+import { ManageProductUseCase, CreateProductDTO, ProductActionType } from '@/core/application/use-cases/ManageProductUseCase';
 import { createMockProductRepository, mockProduct } from '@/__tests__/mocks/repositories';
 
 describe('ManageProductUseCase', () => {
     let useCase: ManageProductUseCase;
-    let mockRepo: any;
+    let mockRepo: ReturnType<typeof createMockProductRepository>;
 
     beforeEach(() => {
         mockRepo = createMockProductRepository();
@@ -60,7 +60,7 @@ describe('ManageProductUseCase', () => {
     });
 
     it('deve lançar erro para ação inválida', async () => {
-        await expect(useCase.executeAction('prod-001', 'invalid' as any))
+        await expect(useCase.executeAction('prod-001', 'invalid' as ProductActionType))
             .rejects.toThrow('Ação inválida');
     });
 

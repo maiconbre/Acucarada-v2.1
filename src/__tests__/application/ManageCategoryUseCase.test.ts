@@ -4,7 +4,7 @@ import { createMockCategoryRepository, mockCategory } from '@/__tests__/mocks/re
 
 describe('ManageCategoryUseCase', () => {
     let useCase: ManageCategoryUseCase;
-    let mockRepo: any;
+    let mockRepo: ReturnType<typeof createMockCategoryRepository>;
 
     beforeEach(() => {
         mockRepo = createMockCategoryRepository();

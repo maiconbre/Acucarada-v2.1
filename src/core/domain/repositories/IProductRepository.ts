@@ -22,9 +22,9 @@ export interface ProductFilters {
     include_deleted?: boolean;
 }
 
-export interface CreateProductInput extends Omit<Product, 'id' | 'created_at' | 'updated_at' | 'deleted_at'> { }
+export type CreateProductInput = Omit<Product, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;
 
-export interface UpdateProductInput extends Partial<CreateProductInput> { }
+export type UpdateProductInput = Partial<CreateProductInput>;
 
 export interface IProductRepository {
     findById(id: string): Promise<Product | null>;

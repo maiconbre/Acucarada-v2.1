@@ -63,6 +63,7 @@ export const useAdminProducts = () => {
     useEffect(() => {
         fetchCategories();
         fetchProducts();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleEdit = (product: Product) => {

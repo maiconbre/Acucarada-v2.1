@@ -75,6 +75,7 @@ export const ProductGrid = () => {
         .select("id, name, description, price, image_url, category, is_featured, is_on_promotion, promotional_price, promotion_start_date, promotion_end_date")
         .eq("is_active", true)
         .eq("is_easter_product", false)
+        .eq("is_featured", true)
         .limit(12); // Aumentando para ter mais produtos para ordenar
 
       if (timeoutRef.current) {
@@ -258,8 +259,8 @@ export const ProductGrid = () => {
 
         {/* Products Grid/List with staggered animation */}
         <div className={`${viewMode === 'grid'
-            ? 'grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 lg:gap-8'
-            : 'flex flex-col gap-4 max-w-2xl mx-auto'
+          ? 'grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 lg:gap-8'
+          : 'flex flex-col gap-4 max-w-2xl mx-auto'
           }`}>
           {renderedProducts}
         </div>
