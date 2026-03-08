@@ -41,6 +41,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -51,6 +52,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -62,6 +64,7 @@
     opacity: 0;
     transform: translateX(20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -73,23 +76,23 @@
   .animate-fade-in {
     animation: fade-in 0.6s ease-out;
   }
-  
+
   .animate-slide-up {
     animation: slide-up 0.8s ease-out;
   }
-  
+
   .animate-slide-in-right {
     animation: slide-in-right 0.6s ease-out;
   }
-  
+
   .h-safe-area-inset-bottom {
     height: env(safe-area-inset-bottom);
   }
-  
+
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  
+
   .mb-safe {
     margin-bottom: env(safe-area-inset-bottom);
   }
@@ -101,16 +104,16 @@
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   .mobile-card-hover {
     @apply transition-all duration-200 active:scale-95 active:bg-gray-50;
   }
-  
+
   .mobile-ripple {
     position: relative;
     overflow: hidden;
   }
-  
+
   .mobile-ripple::before {
     content: '';
     position: absolute;
@@ -123,12 +126,12 @@
     transform: translate(-50%, -50%);
     transition: width 0.3s, height 0.3s;
   }
-  
+
   .mobile-ripple:active::before {
     width: 200px;
     height: 200px;
   }
-  
+
   /* Text truncation utilities */
   .line-clamp-2 {
     display: -webkit-box;
@@ -144,19 +147,6 @@
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
   }
-  
-  body {
-    -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  
-  /* Allow text selection in specific areas */
-  input, textarea, [contenteditable] {
-    -webkit-user-select: text;
-    user-select: text;
-  }
 }
 
 /* Açucarada - Paleta de cores elegante para doces artesanais */
@@ -164,40 +154,55 @@
 @layer base {
   :root {
     /* Cores da marca - Paleta acolhedora e elegante */
-    --background: 30 40% 96%; /* Cream suave */
-    --foreground: 210 15% 20%; /* Gray escuro para texto */
+    --background: 30 40% 96%;
+    /* Cream suave */
+    --foreground: 210 15% 20%;
+    /* Gray escuro para texto */
 
-    --card: 30 50% 98%; /* Cream mais claro */
+    --card: 30 50% 98%;
+    /* Cream mais claro */
     --card-foreground: 210 15% 20%;
 
     --popover: 30 50% 98%;
     --popover-foreground: 210 15% 20%;
 
     /* Primária - Tons de Rosa para identidade da marca */
-    --primary: 330 70% 60%; /* Rose vibrante */
+    --primary: 330 70% 60%;
+    /* Rose vibrante */
     --primary-foreground: 30 40% 96%;
-    --primary-glow: 330 70% 75%; /* Rose mais claro */
-    --primary-soft: 330 40% 88%; /* Rose suave */
+    --primary-glow: 330 70% 75%;
+    /* Rose mais claro */
+    --primary-soft: 330 40% 88%;
+    /* Rose suave */
 
     /* Secundária - Tons terrosos (Brown) para elegância */
-    --secondary: 25 35% 75%; /* Brown claro/bege */
-    --secondary-foreground: 25 60% 25%; /* Brown escuro */
+    --secondary: 25 35% 75%;
+    /* Brown claro/bege */
+    --secondary-foreground: 25 60% 25%;
+    /* Brown escuro */
 
     /* Tons neutros - Gray para textos e fundos */
-    --muted: 210 10% 92%; /* Gray claro */
-    --muted-foreground: 210 15% 45%; /* Gray médio */
+    --muted: 210 10% 92%;
+    /* Gray claro */
+    --muted-foreground: 210 15% 45%;
+    /* Gray médio */
 
     /* Accent - Brown mais escuro para destaques */
-    --accent: 25 50% 50%; /* Brown médio */
+    --accent: 25 50% 50%;
+    /* Brown médio */
     --accent-foreground: 30 40% 96%;
-    --accent-soft: 25 30% 80%; /* Brown suave */
+    --accent-soft: 25 30% 80%;
+    /* Brown suave */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 30 40% 96%;
 
-    --border: 210 15% 85%; /* Gray claro para bordas */
-    --input: 210 10% 88%; /* Gray muito claro para inputs */
-    --ring: 330 70% 60%; /* Rose para focus ring */
+    --border: 210 15% 85%;
+    /* Gray claro para bordas */
+    --input: 210 10% 88%;
+    /* Gray muito claro para inputs */
+    --ring: 330 70% 60%;
+    /* Rose para focus ring */
 
     /* Design tokens */
     --radius: 12px;
@@ -205,11 +210,15 @@
     --radius-xl: 24px;
 
     /* Cores sólidas - Substituindo gradientes */
-    --solid-primary: hsl(330 70% 60%); /* Rose */
-    --solid-warm: hsl(25 50% 50%); /* Brown */
-    --solid-soft: hsl(var(--background)); /* Background sólido */
-    --solid-vibrant: hsl(330 70% 60%); /* Rose */
-    
+    --solid-primary: hsl(330 70% 60%);
+    /* Rose */
+    --solid-warm: hsl(25 50% 50%);
+    /* Brown */
+    --solid-soft: hsl(var(--background));
+    /* Background sólido */
+    --solid-vibrant: hsl(330 70% 60%);
+    /* Rose */
+
     /* Shadows */
     --shadow-soft: 0 4px 20px -4px hsl(var(--primary) / 0.1);
     --shadow-elegant: 0 10px 40px -10px hsl(var(--primary) / 0.15);
@@ -241,33 +250,44 @@
   }
 
   .dark {
-    --background: 25 15% 8%; /* Brown muito escuro */
-    --foreground: 30 20% 92%; /* Cream claro */
+    --background: 25 15% 8%;
+    /* Brown muito escuro */
+    --foreground: 30 20% 92%;
+    /* Cream claro */
 
-    --card: 25 20% 10%; /* Brown escuro */
+    --card: 25 20% 10%;
+    /* Brown escuro */
     --card-foreground: 30 20% 92%;
 
     --popover: 25 20% 10%;
     --popover-foreground: 30 20% 92%;
 
-    --primary: 330 60% 65%; /* Rose mais claro no escuro */
+    --primary: 330 60% 65%;
+    /* Rose mais claro no escuro */
     --primary-foreground: 25 15% 8%;
 
-    --secondary: 25 25% 20%; /* Brown médio escuro */
+    --secondary: 25 25% 20%;
+    /* Brown médio escuro */
     --secondary-foreground: 30 20% 92%;
 
-    --muted: 210 10% 15%; /* Gray escuro */
-    --muted-foreground: 210 15% 65%; /* Gray médio */
+    --muted: 210 10% 15%;
+    /* Gray escuro */
+    --muted-foreground: 210 15% 65%;
+    /* Gray médio */
 
-    --accent: 25 40% 35%; /* Brown médio */
+    --accent: 25 40% 35%;
+    /* Brown médio */
     --accent-foreground: 30 20% 92%;
 
     --destructive: 0 62.8% 50%;
     --destructive-foreground: 30 20% 92%;
 
-    --border: 210 10% 20%; /* Gray escuro para bordas */
-    --input: 210 10% 18%; /* Gray escuro para inputs */
-    --ring: 330 60% 65%; /* Rose para focus ring */
+    --border: 210 10% 20%;
+    /* Gray escuro para bordas */
+    --input: 210 10% 18%;
+    /* Gray escuro para inputs */
+    --ring: 330 60% 65%;
+    /* Rose para focus ring */
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -286,6 +306,18 @@
 
   body {
     @apply bg-background text-foreground font-body;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Allow text selection in specific areas */
+  input,
+  textarea,
+  [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   .font-display {
@@ -374,6 +406,7 @@
       opacity: 0;
       transform: translateY(20px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -385,6 +418,7 @@
       opacity: 0;
       transform: translateY(30px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -392,33 +426,48 @@
   }
 
   @keyframes float {
-    0%, 100% {
+
+    0%,
+    100% {
       transform: translateY(0px);
     }
+
     50% {
       transform: translateY(-10px);
     }
   }
 
   @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
       opacity: 1;
     }
+
     50% {
       opacity: 0.5;
     }
   }
 
   @keyframes bounce {
-    0%, 20%, 53%, 80%, 100% {
+
+    0%,
+    20%,
+    53%,
+    80%,
+    100% {
       transform: translate3d(0, 0, 0);
     }
-    40%, 43% {
+
+    40%,
+    43% {
       transform: translate3d(0, -8px, 0);
     }
+
     70% {
       transform: translate3d(0, -4px, 0);
     }
+
     90% {
       transform: translate3d(0, -2px, 0);
     }
@@ -441,12 +490,16 @@
   }
 
   /* Smooth transitions for all interactive elements */
-  button, .btn, [role="button"] {
+  button,
+  .btn,
+  [role="button"] {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Smooth transitions for cards and interactive elements */
-  .card, .product-card, [data-card] {
+  .card,
+  .product-card,
+  [data-card] {
     transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -490,9 +543,10 @@
       padding-left: 1rem;
       padding-right: 1rem;
     }
-    
+
     /* Reduce motion for users who prefer it */
     @media (prefers-reduced-motion: reduce) {
+
       .animate-fade-in,
       .animate-slide-up,
       .animate-float,
@@ -502,7 +556,7 @@
         opacity: 1 !important;
         transform: none !important;
       }
-      
+
       .hover\:scale-105:hover,
       .hover\:scale-110:hover {
         transform: none;
