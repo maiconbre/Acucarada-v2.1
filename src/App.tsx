@@ -7,15 +7,25 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { UserProvider } from "@/core/infrastructure/contexts/user-context";
 import { CartProvider } from "@/core/infrastructure/contexts/cart-context";
 import { FloatingCart } from "@/components/cart/FloatingCart";
+import { Suspense, lazy } from "react";
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Admin from "./pages/Admin";
-import Catalog from "./pages/Catalog";
-import EasterCatalog from "./pages/EasterCatalog";
-import ProductDetail from "./pages/ProductDetail";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import NotFound from "./pages/NotFound";
+
+// Lazy-loaded routes for code splitting
+const Auth = lazy(() => import("./pages/Auth"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Catalog = lazy(() => import("./pages/Catalog"));
+const EasterCatalog = lazy(() => import("./pages/EasterCatalog"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Carregamento amigável enquanto blocos (chunks) estão descendo via rede
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-primary"></div>
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -33,18 +43,20 @@ const App = () => (
                 v7_relativeSplatPath: true,
               }}
             >
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/catalog" element={<Catalog />} />
-                <Route path="/catalog/easter" element={<EasterCatalog />} />
-                <Route path="/produto/:id" element={<ProductDetail />} />
-                <Route path="/sobre" element={<About />} />
-                <Route path="/contato" element={<Contact />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/admin" element={<Admin />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/catalog" element={<Catalog />} />
+                  <Route path="/catalog/easter" element={<EasterCatalog />} />
+                  <Route path="/produto/:id" element={<ProductDetail />} />
+                  <Route path="/sobre" element={<About />} />
+                  <Route path="/contato" element={<Contact />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/admin" element={<Admin />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
               <FloatingCart />
             </BrowserRouter>
           </TooltipProvider>
