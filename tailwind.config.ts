@@ -38,7 +38,7 @@ export default {
 				'brown-primary': '#AD7843',
 				// #C75B7A - Rosa escuro (acentos e elementos principais)
 				'rose-primary': '#C75B7A',
-				
+
 				// Variações para melhor usabilidade
 				rose: {
 					50: '#fdf2f8',
@@ -139,11 +139,16 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'marquee': {
+					'0%': { transform: 'translateX(0%)' },
+					'100%': { transform: 'translateX(-25%)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'marquee': 'marquee 70s linear infinite'
 			}
 		}
 	},
