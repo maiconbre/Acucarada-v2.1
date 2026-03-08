@@ -61,7 +61,7 @@ export const Hero = () => {
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-4xl md:text-left md:ml-2 lg:ml-4">
           {/* Main Title with improved mobile hierarchy */}
-          <div className="flex flex-col items-center md:items-start -mt-16 md:-mt-20 pb-0 md:-ml-8 lg:-ml-12">
+          <div className="flex flex-col items-center md:items-start -mt-8 md:-mt-20 pb-0 md:-ml-8 lg:-ml-12">
             <img
               src={logoImage}
               alt="Açucarada"
