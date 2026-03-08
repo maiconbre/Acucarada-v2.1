@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { Header } from "@/components/Header";
-import { About as AboutSection } from "@/components/About";
-import { Footer } from "@/components/Footer";
+import { Header } from "@/components/layout/Header";
+import { About as AboutSection } from "@/components/home/About";
+import { Footer } from "@/components/layout/Footer";
 
 const AboutPage = () => {
   // Scroll automático para o topo ao carregar a página

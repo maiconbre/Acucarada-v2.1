@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { Header } from "@/components/Header";
-import { Contact as ContactSection } from "@/components/Contact";
-import { Footer } from "@/components/Footer";
+import { Header } from "@/components/layout/Header";
+import { Contact as ContactSection } from "@/components/home/Contact";
+import { Footer } from "@/components/layout/Footer";
 
 const ContactPage = () => {
   // Scroll automático para o topo ao carregar a página

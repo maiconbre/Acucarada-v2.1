@@ -1,12 +1,12 @@
-import { Header } from "@/components/Header";
-import { Hero } from "@/components/Hero";
-import { Footer } from "@/components/Footer";
+import { Header } from "@/components/layout/Header";
+import { Hero } from "@/components/home/Hero";
+import { Footer } from "@/components/layout/Footer";
 import { useEffect } from "react";
-import { ProductGrid } from "@/components/ProductGrid";
-import { ProductGridEncomenda } from "@/components/ProductGridEncomenda";
-import { ProductGridEaster } from "@/components/ProductGridEaster";
-import { Testimonials } from "@/components/Testimonials";
-import ErrorBoundary from "@/components/ErrorBoundary";
+import { ProductGrid } from "@/components/product/ProductGrid";
+import { ProductGridEncomenda } from "@/components/product/ProductGridEncomenda";
+import { ProductGridEaster } from "@/components/product/ProductGridEaster";
+import { Testimonials } from "@/components/home/Testimonials";
+import ErrorBoundary from "@/components/common/ErrorBoundary";
 
 
 
@@ -22,7 +22,7 @@ export default function Index() {
       <div className="pt-16 md:pt-20">
         <Hero />
       </div>
-      
+
       <ErrorBoundary>
         <ProductGridEaster />
       </ErrorBoundary>
@@ -30,15 +30,15 @@ export default function Index() {
       <ErrorBoundary>
         <ProductGrid />
       </ErrorBoundary>
-      
+
       <ErrorBoundary>
         <ProductGridEncomenda />
       </ErrorBoundary>
-      
+
       <ErrorBoundary>
         <Testimonials />
       </ErrorBoundary>
-      
+
       <Footer />
     </div>
   );
