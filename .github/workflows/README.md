@@ -1,81 +1,31 @@
 # CI/CD Workflows
 
-Este projeto utiliza GitHub Actions para automação de CI/CD com foco em **usabilidade** e **performance**.
+Este projeto utiliza GitHub Actions para automação de CI/CD, com foco integral em **velocidade**, **segurança de código** e **PRs limpos**.
 
 ## 📋 Workflows Disponíveis
 
 ### 1. Main Branch CI/CD (`main.yml`)
-**Trigger:** Push e Pull Requests para `main`
+**Trigger:** Push e Pull Requests para a branch `main`.
 
 **Funcionalidades:**
-- ✅ Instalação de dependências com cache
-- 🔍 Linting do código
-- 🏗️ Build da aplicação
-- 📦 Upload de artefatos
-- 🚀 Deploy automático para produção (apenas em push para main)
+- ✅ Instalação rápida de dependências.
+- 🔍 Linting de código rigoroso.
+- ⚡ **Testes Unitários:** Execução rápida (Vitest) validando Use Cases e a camada de Domínio (Clean Architecture).
+- 🏗️ Build da aplicação principal.
+- 📦 Upload e cache de artefatos.
 
 ### 2. Develop Branch CI (`develop.yml`)
-**Trigger:** Push e Pull Requests para `develop`
+**Trigger:** Push e Pull Requests para a branch `develop`.
 
 **Funcionalidades:**
-- ✅ Instalação de dependências com cache
-- 🔍 Linting do código
-- 🏗️ Build para desenvolvimento
-- ✔️ Validação básica
+- ✅ Instalação e verificação de integridade (Type Check).
+- 🔍 Linting e preenchimento de regras de qualidade.
+- ⚡ **Testes Unitários:** Execução garantida para blindar a entrada de código ruim na branch de desenvolvimento.
+- 🏗️ Build do ambiente de desenvolvimento (Early feedback).
 
-### 3. Performance & Quality Check (`performance.yml`)
-**Trigger:** 
-- Schedule (segundas-feiras às 2h)
-- Pull Requests para `main`
-- Execução manual
+## 🚀 Filosofia do CI/CD
 
-**Funcionalidades:**
-- 📊 Análise do tamanho do bundle
-- 🔍 Detecção de arquivos grandes
-- 📈 Relatório de performance
+A pipeline do Açucarada foi desenhada para otimizar e padronizar o processo de desenvolvimento, com foco em:
+- **Testes super rápidos:** Toda a validação acontece focada na camada core (Domain/Application), o que resulta em testes rodando em poucos segundos e sem travar os Pull Requests.
+- **Fail-Fast:** Regras de ESLint e Typescript (`type-check`) rodam antes, abortando pipelines fadadas ao erro.
 
-## 🚀 Como Usar
-
-### Para Desenvolvedores
-1. **Branch `develop`**: Faça commits normalmente - o CI validará automaticamente
-2. **Branch `main`**: Pull requests acionarão validação completa + deploy
-3. **Performance**: Monitore os relatórios semanais ou execute manualmente
-
-### Configuração de Deploy
-Para configurar o deploy em produção, edite a seção `deploy` em `main.yml`:
-
-```yaml
-- name: Deploy to production
-  run: |
-    # Substitua pelos seus comandos de deploy
-    # Exemplos:
-    # - Vercel: vercel --prod
-    # - Netlify: netlify deploy --prod
-    # - AWS S3: aws s3 sync dist/ s3://seu-bucket
-```
-
-## 🎯 Benefícios
-
-### Usabilidade
-- ✨ Workflows simples e intuitivos
-- 📝 Logs claros e informativos
-- 🔄 Cache automático para velocidade
-- 🎛️ Execução manual disponível
-
-### Performance
-- ⚡ Cache de dependências Node.js
-- 📊 Monitoramento de bundle size
-- 🔍 Detecção proativa de problemas
-- 📈 Relatórios regulares de performance
-
-## 🛠️ Personalização
-
-Para adaptar aos seus needs:
-1. Ajuste as versões do Node.js conforme necessário
-2. Adicione testes específicos do seu projeto
-3. Configure deploy para sua plataforma preferida
-4. Ajuste os schedules conforme sua necessidade
-
----
-
-💡 **Dica**: Use `workflow_dispatch` para executar qualquer workflow manualmente através da interface do GitHub!
