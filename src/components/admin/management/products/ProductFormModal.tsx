@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Product } from "@/core/domain/entities/Product";
 import { Category } from "@/core/domain/entities/Category";
 import { CreateProductDTO, UpdateProductDTO } from "@/core/application/dtos/product.schema";
@@ -53,19 +53,45 @@ export const ProductFormModal = ({
         promotion_end_date: product?.promotion_end_date?.split('T')[0] || "",
     });
 
-    const generateInitialFlavors = () => {
-        if (product?.sabores && product.sabores.length > 0) {
-            return product.sabores.map((flavor, index) => ({
-                id: `flavor-${index}`,
-                name: flavor,
-                image: product.sabor_images?.[flavor] || "",
-                description: product.sabor_descriptions?.[flavor] || ""
-            }));
-        }
-        return [];
-    };
+    const [flavors, setFlavors] = useState<FlavorData[]>([]);
 
-    const [flavors, setFlavors] = useState<FlavorData[]>(generateInitialFlavors());
+    // Sincroniza o estado do formulário com a prop `product` toda vez que o modal é aberto.
+    // Necessário pois o componente permanece montado no DOM mesmo quando o modal está fechado;
+    // assim, o useState inicial não é re-executado quando `product` muda entre aberturas.
+    useEffect(() => {
+        if (!isOpen) return;
+
+        setFormData({
+            name: product?.name || "",
+            description: product?.description || "",
+            price: product?.price?.toString() || "",
+            image_url: product?.image_url || "",
+            category: product?.category || "Outros",
+            ingredientes: product?.ingredientes || "",
+            validade_armazenamento_dias: product?.validade_armazenamento_dias?.toString() || "",
+            is_featured: product?.is_featured || false,
+            is_easter_product: product?.is_easter_product || false,
+            is_active: product?.is_active ?? true,
+            is_on_promotion: product?.is_on_promotion || false,
+            promotional_price: product?.promotional_price?.toString() || "",
+            promotion_start_date: product?.promotion_start_date?.split('T')[0] || "",
+            promotion_end_date: product?.promotion_end_date?.split('T')[0] || "",
+        });
+
+        if (product?.sabores && product.sabores.length > 0) {
+            setFlavors(
+                product.sabores.map((flavor, index) => ({
+                    id: `flavor-${index}`,
+                    name: flavor,
+                    image: product.sabor_images?.[flavor] || "",
+                    description: product.sabor_descriptions?.[flavor] || "",
+                }))
+            );
+        } else {
+            setFlavors([]);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, product]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
