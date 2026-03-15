@@ -29,3 +29,6 @@ docs/
 *.njsproj
 *.sln
 *.sw?
+
+# Vite temp/cache files
+vite.config.ts.timestamp-*
