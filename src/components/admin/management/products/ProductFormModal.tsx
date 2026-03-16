@@ -113,6 +113,8 @@ export const ProductFormModal = ({
             price: parseFloat(formData.price || '0'),
             promotional_price: formData.is_on_promotion && formData.promotional_price ? parseFloat(formData.promotional_price) : null,
             validade_armazenamento_dias: formData.validade_armazenamento_dias ? parseInt(formData.validade_armazenamento_dias) : null,
+            promotion_start_date: formData.promotion_start_date || null,
+            promotion_end_date: formData.promotion_end_date || null,
             sabores: saboresArray.length > 0 ? saboresArray : null,
             sabor_images: Object.keys(saborImages).length > 0 ? saborImages : null,
             sabor_descriptions: Object.keys(saborDescriptions).length > 0 ? saborDescriptions : null,

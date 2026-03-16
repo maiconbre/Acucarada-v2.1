@@ -4,7 +4,7 @@ export const ProductSchema = z.object({
     name: z.string().min(1, 'Nome do produto é obrigatório'),
     description: z.string().optional().default(''),
     price: z.number().positive('Preço deve ser maior que zero'),
-    image_url: z.string().url('URL da imagem inválida').or(z.literal('')),
+    image_url: z.string(),
     category: z.string().min(1, 'Selecione uma categoria'),
     ingredientes: z.string().nullable().optional(),
     validade_armazenamento_dias: z.number().nullable().optional(),
@@ -16,8 +16,8 @@ export const ProductSchema = z.object({
     is_active: z.boolean().default(true),
     is_on_promotion: z.boolean().default(false),
     promotional_price: z.number().nullable().optional(),
-    promotion_start_date: z.string().nullable().optional(),
-    promotion_end_date: z.string().nullable().optional(),
+    promotion_start_date: z.string().nullable().optional().transform(v => v || null),
+    promotion_end_date: z.string().nullable().optional().transform(v => v || null),
 }).refine(data => {
     // Validação cruzada para promoções
     if (data.is_on_promotion) {
