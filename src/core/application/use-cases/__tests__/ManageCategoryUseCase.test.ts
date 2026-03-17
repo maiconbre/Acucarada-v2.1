@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ManageCategoryUseCase } from '@/core/application/use-cases/ManageCategoryUseCase';
-import { createMockCategoryRepository, mockCategory } from '@/__tests__/mocks/repositories';
+import { createMockCategoryRepository, mockCategory } from '@/core/application/__tests__/mocks/repositories';
 
 describe('ManageCategoryUseCase', () => {
     let useCase: ManageCategoryUseCase;
@@ -27,5 +27,17 @@ describe('ManageCategoryUseCase', () => {
         const category = await useCase.getById('cat-001');
         expect(category).toEqual(mockCategory);
         expect(mockRepo.findById).toHaveBeenCalledWith('cat-001');
+    });
+
+    it('getById deve retornar null para ID inexistente', async () => {
+        mockRepo.findById = vi.fn().mockResolvedValue(null);
+        const category = await useCase.getById('nao-existe');
+        expect(category).toBeNull();
+    });
+
+    it('getAll deve retornar lista vazia quando o repositório retornar vazio', async () => {
+        mockRepo.findAll = vi.fn().mockResolvedValue([]);
+        const categories = await useCase.getAll();
+        expect(categories).toHaveLength(0);
     });
 });

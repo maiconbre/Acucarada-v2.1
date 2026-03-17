@@ -1,11 +1,14 @@
 import { vi } from 'vitest';
 import { Product } from '@/core/domain/entities/Product';
 import { Category } from '@/core/domain/entities/Category';
-import { IProductRepository, ProductFilters, CreateProductInput, UpdateProductInput, PaginationParams, PaginatedResult } from '@/core/domain/repositories/IProductRepository';
+import { IProductRepository } from '@/core/domain/repositories/IProductRepository';
 import { ICategoryRepository } from '@/core/domain/repositories/ICategoryRepository';
 import { IAppSettingsRepository, AppSetting, AppSettings } from '@/core/domain/repositories/IAppSettingsRepository';
 import { IProductAnalyticsRepository, ProductAnalytics, LikeStatus } from '@/core/domain/repositories/IProductAnalyticsRepository';
 
+/**
+ * OBJETOS MOCK BASE (Defaults)
+ */
 export const mockProduct: Product = {
   id: 'prod-001',
   name: 'Brigadeiro Gourmet',
@@ -13,18 +16,9 @@ export const mockProduct: Product = {
   price: 25.00,
   image_url: 'https://example.com/brigadeiro.jpg',
   category: 'brigadeiros',
-  ingredientes: ' chocolate, leite condensado, cream cheese',
-  validade_armazenamento_dias: 15,
-  sabores: ['tradicional', 'chocolate', 'coco'],
-  sabor_images: { tradicional: 'https://example.com/tradicional.jpg' },
-  sabor_descriptions: { tradicional: 'Sabor clássico' },
   is_featured: true,
   is_easter_product: false,
   is_active: true,
-  is_on_promotion: false,
-  promotional_price: null,
-  promotion_start_date: null,
-  promotion_end_date: null,
   created_at: '2024-01-01T00:00:00.000Z',
   updated_at: '2024-01-01T00:00:00.000Z',
   deleted_at: null,
@@ -33,7 +27,7 @@ export const mockProduct: Product = {
 export const mockCategory: Category = {
   id: 'cat-001',
   name: 'Brigadeiros',
-  description: ' brigadeiros gourmet',
+  description: 'brigadeiros gourmet',
   is_active: true,
   created_at: '2024-01-01T00:00:00.000Z',
   updated_at: '2024-01-01T00:00:00.000Z',
@@ -49,12 +43,12 @@ export const mockAppSettings: AppSettings = {
 };
 
 export const mockAppSettingsList: AppSetting[] = [
-  { key: 'whatsapp_number', value: '5511999999999', description: '', category: '' },
-  { key: 'whatsapp_message', value: 'Olá! Gostaria de fazer um pedido dos seus doces artesanais.', description: '', category: '' },
-  { key: 'site_name', value: 'Açucarada Doces', description: '', category: '' },
-  { key: 'site_description', value: 'Doces artesanais feitos com amor e carinho', description: '', category: '' },
-  { key: 'maintenance_mode', value: 'false', description: '', category: '' },
-  { key: 'analytics_enabled', value: 'true', description: '', category: '' },
+    { key: 'whatsapp_number', value: '5511999999999', description: '', category: '' },
+    { key: 'whatsapp_message', value: 'Olá! Gostaria de fazer um pedido dos seus doces artesanais.', description: '', category: '' },
+    { key: 'site_name', value: 'Açucarada Doces', description: '', category: '' },
+    { key: 'site_description', value: 'Doces artesanais feitos com amor e carinho', description: '', category: '' },
+    { key: 'maintenance_mode', value: 'false', description: '', category: '' },
+    { key: 'analytics_enabled', value: 'true', description: '', category: '' },
 ];
 
 export const mockAppSetting: AppSetting = mockAppSettingsList[0];
@@ -70,6 +64,9 @@ export const mockLikeStatus: LikeStatus = {
   like_id: 'like-001',
 };
 
+/**
+ * FACTORIES DE REPOSITÓRIOS MOCK
+ */
 export const createMockProductRepository = (overrides?: Partial<IProductRepository>): IProductRepository => ({
   findAll: vi.fn().mockResolvedValue([mockProduct]),
   findById: vi.fn().mockResolvedValue(mockProduct),
@@ -108,15 +105,5 @@ export const createMockProductAnalyticsRepository = (overrides?: Partial<IProduc
   toggleLike: vi.fn().mockResolvedValue(true),
   trackShare: vi.fn().mockResolvedValue(true),
   trackClick: vi.fn().mockResolvedValue(true),
-  ...overrides,
-});
-
-export const createMockProduct = (overrides?: Partial<Product>): Product => ({
-  ...mockProduct,
-  ...overrides,
-});
-
-export const createMockCategory = (overrides?: Partial<Category>): Category => ({
-  ...mockCategory,
   ...overrides,
 });

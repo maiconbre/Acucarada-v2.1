@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/core/application/hooks/useAuth";
-import { supabase } from "@/core/infrastructure/supabase/client";
+import { container } from "@/core/infrastructure/container";
+import { ManageProductUseCase } from "@/core/application/use-cases/ManageProductUseCase";
+import { ManageCategoryUseCase } from "@/core/application/use-cases/ManageCategoryUseCase";
+import { Product } from "@/core/domain/entities/Product";
+import { Category } from "@/core/domain/entities/Category";
 import { Button } from "@/components/ui/data-display/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/data-display/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/navigation/tabs";
@@ -11,34 +15,13 @@ import AnalyticsPanel from "@/components/admin/analytics/AnalyticsPanel";
 import Settings from "@/components/admin/settings/Settings";
 import MobileBottomNav from "@/components/admin/mobile/MobileBottomNav";
 import MobileDashboard from "@/components/admin/mobile/MobileDashboard";
-import { LogOut, Package, BarChart, Tag, TrendingUp, Settings as SettingsIcon, Menu, X } from "lucide-react";
+import { LogOut, Package, BarChart, Tag, TrendingUp, Settings as SettingsIcon } from "lucide-react";
 import { useToast } from "@/hooks/ui/use-toast";
 import { useIsMobile } from "@/hooks/ui/use-mobile";
-import { Json } from "@/core/infrastructure/supabase/types";
 
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image_url: string;
-  category: string;
-  ingredientes?: string;
-  validade_armazenamento_dias?: number;
-  sabores?: string[];
-  sabor_images?: Json;
-  is_featured: boolean;
-  is_active: boolean;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  description?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+// Use Cases instanciados via container (IoC)
+const productUseCase = new ManageProductUseCase(container.getProductRepository());
+const categoryUseCase = new ManageCategoryUseCase(container.getCategoryRepository());
 
 const Admin = () => {
   const { user, signOut, loading: authLoading } = useAuth();
@@ -46,21 +29,14 @@ const Admin = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
   const fetchProducts = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .is("deleted_at", null) // Filtrar produtos não deletados (soft delete)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setProducts(data || []);
+      const data = await productUseCase.getAll();
+      setProducts(data);
     } catch (error) {
       console.error("Erro ao buscar produtos:", error);
       toast({
@@ -68,27 +44,19 @@ const Admin = () => {
         title: "Erro",
         description: "Não foi possível carregar os produtos.",
       });
-    } finally {
-      setLoading(false);
     }
   }, [toast]);
 
   const fetchCategories = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("*")
-        .eq("is_active", true)
-        .order("name", { ascending: true });
-
-      if (error) throw error;
-      setCategories(data || []);
+      const data = await categoryUseCase.getAll(true);
+      setCategories(data);
     } catch (error) {
       console.error("Erro ao buscar categorias:", error);
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Erro ao carregar categorias",
+        description: "Erro ao carregar categorias.",
       });
     }
   }, [toast]);
@@ -112,17 +80,11 @@ const Admin = () => {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    setIsMobileMenuOpen(false);
   };
 
   const handleQuickAction = (action: string) => {
-    switch (action) {
-      case "add-product":
-        setActiveTab("products");
-        // Aqui você pode adicionar lógica para abrir modal de adicionar produto
-        break;
-      default:
-        break;
+    if (action === "add-product") {
+      setActiveTab("products");
     }
   };
 
@@ -137,15 +99,9 @@ const Admin = () => {
           />
         );
       case "products":
-        return (
-          <ProductManagement />
-        );
+        return <ProductManagement />;
       case "categories":
-        return (
-          <CategoryManagement
-            onCategoriesChange={fetchProducts}
-          />
-        );
+        return <CategoryManagement onCategoriesChange={fetchProducts} />;
       case "analytics":
         return <AnalyticsPanel />;
       case "settings":
@@ -171,8 +127,8 @@ const Admin = () => {
 
   if (!user) return null;
 
-  const activeProducts = products.filter(p => p.is_active).length;
-  const featuredProducts = products.filter(p => p.is_featured).length;
+  const activeProducts = products.filter((p) => p.is_active).length;
+  const featuredProducts = products.filter((p) => p.is_featured).length;
 
   return (
     <div className="min-h-screen gradient-soft">
@@ -240,12 +196,7 @@ const Admin = () => {
         <div className="container mx-auto px-4 py-4 pb-20">
           {renderMobileContent()}
         </div>
-
-        {/* Mobile Bottom Navigation */}
-        <MobileBottomNav
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-        />
+        <MobileBottomNav activeTab={activeTab} onTabChange={handleTabChange} />
       </div>
 
       {/* Desktop Layout */}
@@ -256,39 +207,31 @@ const Admin = () => {
             <Card className="transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer border-0 shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Produtos</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground transition-colors duration-200 group-hover:text-rose-primary" />
+                <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold transition-colors duration-200">{products.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  {activeProducts} ativos
-                </p>
+                <div className="text-2xl font-bold">{products.length}</div>
+                <p className="text-xs text-muted-foreground">{activeProducts} ativos</p>
               </CardContent>
             </Card>
             <Card className="transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer border-0 shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Produtos em Destaque</CardTitle>
-                <BarChart className="h-4 w-4 text-muted-foreground transition-colors duration-200 group-hover:text-rose-primary" />
+                <BarChart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold transition-colors duration-200">{featuredProducts}</div>
-                <p className="text-xs text-muted-foreground">
-                  Exibidos na página inicial
-                </p>
+                <div className="text-2xl font-bold">{featuredProducts}</div>
+                <p className="text-xs text-muted-foreground">Exibidos na página inicial</p>
               </CardContent>
             </Card>
             <Card className="transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer border-0 shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Categorias</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground transition-colors duration-200 group-hover:text-rose-primary" />
+                <Tag className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold transition-colors duration-200">
-                  {categories.length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Diferentes categorias
-                </p>
+                <div className="text-2xl font-bold">{categories.length}</div>
+                <p className="text-xs text-muted-foreground">Categorias ativas</p>
               </CardContent>
             </Card>
           </div>
@@ -297,19 +240,19 @@ const Admin = () => {
           <Tabs defaultValue="products" className="w-full">
             <TabsList className="grid w-full grid-cols-4 h-auto p-1">
               <TabsTrigger value="products" className="flex-row gap-2 py-1.5 text-sm transition-all duration-200 hover:scale-105">
-                <Package className="h-4 w-4 transition-transform duration-200" />
+                <Package className="h-4 w-4" />
                 Produtos
               </TabsTrigger>
               <TabsTrigger value="categories" className="flex-row gap-2 py-1.5 text-sm transition-all duration-200 hover:scale-105">
-                <Tag className="h-4 w-4 transition-transform duration-200" />
+                <Tag className="h-4 w-4" />
                 Categorias
               </TabsTrigger>
               <TabsTrigger value="analytics" className="flex-row gap-2 py-1.5 text-sm transition-all duration-200 hover:scale-105">
-                <TrendingUp className="h-4 w-4 transition-transform duration-200" />
+                <TrendingUp className="h-4 w-4" />
                 Analytics
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex-row gap-2 py-1.5 text-sm transition-all duration-200 hover:scale-105">
-                <SettingsIcon className="h-4 w-4 transition-transform duration-200" />
+                <SettingsIcon className="h-4 w-4" />
                 Configurações
               </TabsTrigger>
             </TabsList>
@@ -317,17 +260,12 @@ const Admin = () => {
             <TabsContent value="products" className="mt-6">
               <ProductManagement />
             </TabsContent>
-
             <TabsContent value="categories" className="mt-6">
-              <CategoryManagement
-                onCategoriesChange={fetchProducts}
-              />
+              <CategoryManagement onCategoriesChange={fetchProducts} />
             </TabsContent>
-
             <TabsContent value="analytics" className="mt-6">
               <AnalyticsPanel />
             </TabsContent>
-
             <TabsContent value="settings" className="mt-6">
               <Settings />
             </TabsContent>

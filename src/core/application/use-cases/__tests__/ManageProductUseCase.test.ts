@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ManageProductUseCase, CreateProductDTO, ProductActionType } from '@/core/application/use-cases/ManageProductUseCase';
-import { createMockProductRepository, mockProduct } from '@/__tests__/mocks/repositories';
+import { createMockProductRepository, mockProduct } from '@/core/application/__tests__/mocks/repositories';
 
 describe('ManageProductUseCase', () => {
     let useCase: ManageProductUseCase;
@@ -67,5 +67,61 @@ describe('ManageProductUseCase', () => {
     it('deve lançar erro se currentStatus for omitido no toggle', async () => {
         await expect(useCase.executeAction('prod-001', 'toggle'))
             .rejects.toThrow('currentStatus é obrigatório para toggle');
+    });
+
+    it('getById deve retornar null para ID inexistente', async () => {
+        mockRepo.findById = vi.fn().mockResolvedValue(null);
+        const product = await useCase.getById('nao-existe');
+        expect(product).toBeNull();
+    });
+
+    it('create deve popular defaults corretamente para campos opcionais', async () => {
+        const dto: CreateProductDTO = {
+            name: 'Produto Minimal',
+            price: 5,
+            image_url: 'url',
+            category: 'cat'
+        };
+
+        await useCase.create(dto);
+        
+        expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+            description: '',
+            is_featured: false,
+            is_active: true,
+            ingredientes: null
+        }));
+    });
+
+    it('create deve aceitar todos os campos opcionais preenchidos', async () => {
+        const dto: CreateProductDTO = {
+            name: 'Produto Full',
+            price: 100,
+            image_url: 'url',
+            category: 'cat',
+            description: 'Desc',
+            is_on_promotion: true,
+            promotional_price: 80,
+            sabores: ['Morango'],
+            validade_armazenamento_dias: 30
+        };
+
+        await useCase.create(dto);
+        expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+            promotional_price: 80,
+            is_on_promotion: true,
+            validade_armazenamento_dias: 30
+        }));
+    });
+
+    it('update deve aceitar dados parciais', async () => {
+        const dto = { is_active: false };
+        await useCase.update('prod-1', dto);
+        expect(mockRepo.update).toHaveBeenCalledWith('prod-1', { is_active: false });
+    });
+
+    it('executeAction deve funcionar com toggle e currentStatus = false', async () => {
+        await useCase.executeAction('prod-001', 'toggle', false);
+        expect(mockRepo.toggleActive).toHaveBeenCalledWith('prod-001', false);
     });
 });
