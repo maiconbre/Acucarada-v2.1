@@ -8,7 +8,9 @@ describe('Utils', () => {
         });
 
         it('deve lidar com condições booleanas', () => {
-            expect(cn('base', true && 'active', false && 'hidden')).toBe('base active');
+            const isActive = true;
+            const isHidden = false;
+            expect(cn('base', isActive && 'active', isHidden && 'hidden')).toBe('base active');
         });
 
         it('deve resolver conflitos de Tailwind via twMerge', () => {
