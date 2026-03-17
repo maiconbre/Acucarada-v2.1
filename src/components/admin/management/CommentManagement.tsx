@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/core/infrastructure/supabase/client';
+import { container } from '@/core/infrastructure/container';
+import { ManageCommentUseCase } from '@/core/application/use-cases/ManageCommentUseCase';
+import { Comment } from '@/core/domain/entities/Comment';
+import { CommentFilter } from '@/core/domain/repositories/ICommentRepository';
 import { useToast } from '@/hooks/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/data-display/card';
 import { Button } from '@/components/ui/data-display/button';
@@ -19,60 +22,29 @@ import {
 } from "@/components/ui/feedback/alert-dialog";
 import { Label } from '@/components/ui/forms/label';
 
-interface Comment {
-  id: string;
-  comment: string;
-  author_name?: string;
-  instagram_handle?: string;
-  image_url?: string;
-  is_approved: boolean;
-  created_at: string;
-  product_id: string;
-  product?: {
-    id: string;
-    name: string;
-    image_url?: string;
-  };
-}
+// Use Case instanciado via container (IoC)
+const commentUseCase = new ManageCommentUseCase(container.getCommentRepository());
 
 const CommentManagement = () => {
   const { toast } = useToast();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('pending');
+  const [filter, setFilter] = useState<CommentFilter>('pending');
 
   const fetchComments = useCallback(async () => {
     setLoading(true);
-    let query = supabase
-      .from('comments')
-      .select(`
-        *,
-        product:products(
-          id,
-          name,
-          image_url
-        )
-      `)
-      .order('created_at', { ascending: false });
-
-    if (filter === 'pending') {
-      query = query.eq('is_approved', false);
-    } else if (filter === 'approved') {
-      query = query.eq('is_approved', true);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
+    try {
+      const data = await commentUseCase.getAll(filter);
+      setComments(data);
+    } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Erro ao carregar comentários',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido.',
       });
-    } else {
-      setComments(data as Comment[]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [toast, filter]);
 
   useEffect(() => {
@@ -80,68 +52,54 @@ const CommentManagement = () => {
   }, [fetchComments]);
 
   const handleApproval = async (id: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from('comments')
-      .update({ is_approved: !currentStatus })
-      .eq('id', id);
-
-    if (error) {
+    try {
+      await commentUseCase.toggleApproval(id, currentStatus);
+      toast({ title: 'Sucesso!', description: `Comentário ${!currentStatus ? 'aprovado' : 'reprovado'}.` });
+      fetchComments();
+    } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Erro ao atualizar comentário',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido.',
       });
-    } else {
-      toast({
-        title: 'Sucesso!',
-        description: `Comentário ${!currentStatus ? 'aprovado' : 'reprovado'}.`,
-      });
-      fetchComments();
     }
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('comments').delete().eq('id', id);
-
-    if (error) {
+    try {
+      await commentUseCase.delete(id);
+      toast({ title: 'Sucesso!', description: 'Comentário excluído.' });
+      fetchComments();
+    } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Erro ao excluir comentário',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido.',
       });
-    } else {
-      toast({
-        title: 'Sucesso!',
-        description: 'Comentário excluído.',
-      });
-      fetchComments();
     }
   };
 
   const CommentCard = ({ comment }: { comment: Comment }) => (
     <Card>
       <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
-        {/* Informações do Produto */}
         {comment.product && (
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg mb-4 sm:mb-0 sm:w-64 flex-shrink-0">
             {comment.product.image_url && (
-              <img 
-                src={comment.product.image_url} 
-                alt={comment.product.name} 
+              <img
+                src={comment.product.image_url}
+                alt={comment.product.name}
                 className="w-12 h-12 rounded-lg object-cover"
-                loading="lazy" 
-                decoding="async" 
+                loading="lazy"
+                decoding="async"
               />
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {comment.product.name}
-              </p>
+              <p className="text-sm font-medium text-gray-900 truncate">{comment.product.name}</p>
               <p className="text-xs text-gray-500">Produto</p>
             </div>
           </div>
         )}
-        
+
         <div className="flex-1">
           <div className="flex justify-between items-start mb-2">
             <div className="flex items-center gap-2">
@@ -176,9 +134,11 @@ const CommentManagement = () => {
               onCheckedChange={() => handleApproval(comment.id, comment.is_approved)}
               aria-label="Aprovar comentário"
             />
-            <Label htmlFor={`approve-${comment.id}`} className="text-sm">{comment.is_approved ? 'Aprovado' : 'Aprovar'}</Label>
+            <Label htmlFor={`approve-${comment.id}`} className="text-sm">
+              {comment.is_approved ? 'Aprovado' : 'Aprovar'}
+            </Label>
           </div>
-           <AlertDialog>
+          <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="icon" className="text-destructive">
                 <Trash2 className="h-4 w-4" />
@@ -193,9 +153,7 @@ const CommentManagement = () => {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleDelete(comment.id)}>
-                  Excluir
-                </AlertDialogAction>
+                <AlertDialogAction onClick={() => handleDelete(comment.id)}>Excluir</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -211,20 +169,18 @@ const CommentManagement = () => {
           <ThumbsUp className="h-5 w-5" />
           Gerenciamento de Comentários
         </CardTitle>
-        <CardDescription>
-          Aprove, reprove ou exclua os comentários dos seus produtos.
-        </CardDescription>
+        <CardDescription>Aprove, reprove ou exclua os comentários dos seus produtos.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                <Button variant={filter === 'pending' ? 'secondary' : 'ghost'} onClick={() => setFilter('pending')}>Pendentes</Button>
-                <Button variant={filter === 'approved' ? 'secondary' : 'ghost'} onClick={() => setFilter('approved')}>Aprovados</Button>
-                <Button variant={filter === 'all' ? 'secondary' : 'ghost'} onClick={() => setFilter('all')}>Todos</Button>
-            </div>
-            <Button variant="ghost" size="icon" onClick={fetchComments} disabled={loading}>
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
+          <div className="flex items-center gap-2">
+            <Button variant={filter === 'pending' ? 'secondary' : 'ghost'} onClick={() => setFilter('pending')}>Pendentes</Button>
+            <Button variant={filter === 'approved' ? 'secondary' : 'ghost'} onClick={() => setFilter('approved')}>Aprovados</Button>
+            <Button variant={filter === 'all' ? 'secondary' : 'ghost'} onClick={() => setFilter('all')}>Todos</Button>
+          </div>
+          <Button variant="ghost" size="icon" onClick={fetchComments} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
 
         {loading ? (

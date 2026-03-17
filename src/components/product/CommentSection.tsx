@@ -1,22 +1,17 @@
 import { useState, useEffect, useCallback, forwardRef, useRef } from 'react';
-import { supabase } from '@/core/infrastructure/supabase/client';
 import { useAuth } from '@/core/application/hooks/useAuth';
+import { container } from '@/core/infrastructure/container';
+import { ManageCommentUseCase } from '@/core/application/use-cases/ManageCommentUseCase';
+import { Comment } from '@/core/domain/entities/Comment';
 import { Button } from '@/components/ui/data-display/button';
 import { Textarea } from '@/components/ui/forms/textarea';
 import { Input } from '@/components/ui/forms/input';
 import { useToast } from '@/hooks/ui/use-toast';
-
 import { Card, CardContent } from '@/components/ui/data-display/card';
 import { Instagram, User, Star } from 'lucide-react';
 
-interface Comment {
-  id: string;
-  comment: string;
-  created_at: string;
-  author_name?: string;
-  instagram_handle?: string;
-  rating: number; // Adicionado
-}
+// Use Case instanciado via container (IoC)
+const commentUseCase = new ManageCommentUseCase(container.getCommentRepository());
 
 interface CommentSectionProps {
   productId: string;
@@ -29,18 +24,14 @@ export const CommentSection = forwardRef<HTMLDivElement, CommentSectionProps>(({
   const [newComment, setNewComment] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [instagramHandle, setInstagramHandle] = useState('');
-
   const [loading, setLoading] = useState(false);
   const [selectedRating, setSelectedRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  
-  // Paginação para otimizar performance
   const [currentPage, setCurrentPage] = useState(1);
   const [totalComments, setTotalComments] = useState(0);
   const commentsPerPage = 5;
-  
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,7 +40,6 @@ export const CommentSection = forwardRef<HTMLDivElement, CommentSectionProps>(({
     }
   }, [user]);
 
-  // Intersection Observer para lazy loading
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -58,76 +48,34 @@ export const CommentSection = forwardRef<HTMLDivElement, CommentSectionProps>(({
           setHasLoadedOnce(true);
         }
       },
-      {
-        threshold: 0.1,
-        rootMargin: '100px'
-      }
+      { threshold: 0.1, rootMargin: '100px' }
     );
-
     const currentRef = sectionRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
+    if (currentRef) observer.observe(currentRef);
+    return () => { if (currentRef) observer.unobserve(currentRef); };
   }, [hasLoadedOnce]);
 
   const fetchComments = useCallback(async (page = 1) => {
     setLoading(true);
-    
-    // Primeiro, buscar o total de comentários
-    const { count } = await supabase
-      .from('comments')
-      .select('*', { count: 'exact', head: true })
-      .eq('product_id', productId)
-      .eq('is_approved', true);
-    
-    setTotalComments(count || 0);
-    
-    // Depois buscar os comentários paginados
-    const from = (page - 1) * commentsPerPage;
-    const to = from + commentsPerPage - 1;
-    
-    const { data, error } = await supabase
-      .from('comments')
-      .select(`
-        id,
-        comment,
-        created_at,
-        author_name,
-        instagram_handle,
-        rating
-      `)
-      .eq('product_id', productId)
-      .eq('is_approved', true)
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (error) {
-      console.error('Error fetching comments:', error);
-      toast({ variant: 'destructive', title: 'Erro ao carregar comentários.' });
-    } else {
+    try {
+      const { comments: data, total } = await commentUseCase.getByProductId(productId, page, commentsPerPage);
+      setTotalComments(total);
       if (page === 1) {
-        setComments(data as Comment[]);
+        setComments(data);
       } else {
-        // Para páginas subsequentes, adicionar aos comentários existentes
-        setComments(prev => [...prev, ...(data as Comment[])]);
+        setComments(prev => [...prev, ...data]);
       }
+    } catch (error) {
+      console.error('Erro ao carregar comentários:', error);
+      toast({ variant: 'destructive', title: 'Erro ao carregar comentários.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [productId, toast]);
 
   useEffect(() => {
-    if (isVisible) {
-      fetchComments();
-    }
+    if (isVisible) fetchComments();
   }, [isVisible]); // eslint-disable-line react-hooks/exhaustive-deps
-
-
 
   const handleSubmitComment = async () => {
     if (newComment.trim() === '') {
@@ -138,35 +86,29 @@ export const CommentSection = forwardRef<HTMLDivElement, CommentSectionProps>(({
       toast({ title: 'Por favor, insira seu nome.' });
       return;
     }
-
     setLoading(true);
-
-    const { error } = await supabase.from('comments').insert([
-      {
+    try {
+      await commentUseCase.create({
         product_id: productId,
         comment: newComment,
         author_name: authorName,
         instagram_handle: instagramHandle,
         image_url: null,
-        rating: selectedRating, // Adicionado
-      },
-    ]);
-
-    if (error) {
-      console.error('Error submitting comment:', error);
-      toast({ variant: 'destructive', title: 'Erro ao enviar comentário.' });
-    } else {
+        rating: selectedRating,
+      });
       setNewComment('');
       setInstagramHandle('');
-
-      setSelectedRating(5); // Resetar para 5 estrelas
+      setSelectedRating(5);
       if (!user) setAuthorName('');
       toast({ title: 'Comentário enviado!', description: 'Seu comentário está aguardando aprovação.' });
-      // Resetar para primeira página e recarregar
       setCurrentPage(1);
-      fetchComments(1); 
+      fetchComments(1);
+    } catch (error) {
+      console.error('Erro ao enviar comentário:', error);
+      toast({ variant: 'destructive', title: 'Erro ao enviar comentário.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const loadMoreComments = () => {
@@ -182,7 +124,7 @@ export const CommentSection = forwardRef<HTMLDivElement, CommentSectionProps>(({
       <div ref={sectionRef}>
         <h3 className="text-xl font-bold font-title">Comentários e Avaliações</h3>
       </div>
-      
+
       {!isVisible ? (
         <div className="text-center py-8">
           <div className="animate-pulse">
@@ -192,130 +134,113 @@ export const CommentSection = forwardRef<HTMLDivElement, CommentSectionProps>(({
         </div>
       ) : (
         <>
-        <Card>
-        <CardContent className="p-4">
-          <div className="space-y-4">
-            <Textarea
-              placeholder="Deixe seu comentário..."
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              disabled={loading}
-              className="bg-white"
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {!user && (
-                <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                    placeholder="Seu nome"
-                    value={authorName}
-                    onChange={(e) => setAuthorName(e.target.value)}
-                    disabled={loading}
-                    className="pl-10 bg-white"
-                    />
-                </div>
-              )}
-              <div className="relative">
-                  <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <div className="absolute left-10 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">@</div>
-                  <Input
-                  placeholder="seu_instagram"
-                  value={instagramHandle}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/@/g, ''); // Remove qualquer @ digitado
-                    setInstagramHandle(value);
-                  }}
+          <Card>
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                <Textarea
+                  placeholder="Deixe seu comentário..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
                   disabled={loading}
-                  className="pl-14 bg-white"
-                  />
-              </div>
-              {/* Seletor de Avaliação (Estrelas Clicáveis) */}
-              <div className="relative md:col-span-2">
-                  <label className="block text-sm font-medium text-muted-foreground mb-1">Sua avaliação (estrelas):</label>
-                  <div className="flex items-center gap-1">
+                  className="bg-white"
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {!user && (
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Seu nome"
+                        value={authorName}
+                        onChange={(e) => setAuthorName(e.target.value)}
+                        disabled={loading}
+                        className="pl-10 bg-white"
+                      />
+                    </div>
+                  )}
+                  <div className="relative">
+                    <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <div className="absolute left-10 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">@</div>
+                    <Input
+                      placeholder="seu_instagram"
+                      value={instagramHandle}
+                      onChange={(e) => setInstagramHandle(e.target.value.replace(/@/g, ''))}
+                      disabled={loading}
+                      className="pl-14 bg-white"
+                    />
+                  </div>
+                  <div className="relative md:col-span-2">
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">Sua avaliação (estrelas):</label>
+                    <div className="flex items-center gap-1">
                       {[...Array(5)].map((_, index) => {
-                          const ratingValue = index + 1;
-                          return (
-                              <Star
-                                  key={ratingValue}
-                                  className={`cursor-pointer h-6 w-6 transition-colors duration-200 ${
-                                      ratingValue <= (hoverRating || selectedRating)
-                                          ? 'fill-yellow-400 text-yellow-400'
-                                          : 'text-gray-300'
-                                  }`}
-                                  onClick={() => setSelectedRating(ratingValue)}
-                                  onMouseEnter={() => setHoverRating(ratingValue)}
-                                  onMouseLeave={() => setHoverRating(0)}
-                              />
-                          );
+                        const ratingValue = index + 1;
+                        return (
+                          <Star
+                            key={ratingValue}
+                            className={`cursor-pointer h-6 w-6 transition-colors duration-200 ${ratingValue <= (hoverRating || selectedRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                            onClick={() => setSelectedRating(ratingValue)}
+                            onMouseEnter={() => setHoverRating(ratingValue)}
+                            onMouseLeave={() => setHoverRating(0)}
+                          />
+                        );
                       })}
                       {selectedRating > 0 && (
-                          <span className="ml-2 text-sm font-semibold text-yellow-600">
-                              {selectedRating} Estrela{selectedRating > 1 ? 's' : ''}
-                          </span>
+                        <span className="ml-2 text-sm font-semibold text-yellow-600">
+                          {selectedRating} Estrela{selectedRating > 1 ? 's' : ''}
+                        </span>
                       )}
-                  </div>
-              </div>
-
-            </div>
-            <Button onClick={handleSubmitComment} disabled={loading} className="w-full">
-              {loading ? 'Enviando...' : 'Enviar Comentário'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-4">
-        {comments.map((comment) => (
-          <Card key={comment.id}>
-            <CardContent className="p-4">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2">
-                  {comment.instagram_handle && (
-                    <a href={`https://instagram.com/${comment.instagram_handle}`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-pink-600 hover:text-pink-700 hover:underline">
-                      @{comment.instagram_handle}
-                    </a>
-                  )}
-                  {comment.author_name && !comment.instagram_handle && (
-                    <span className="text-sm font-medium text-gray-700">{comment.author_name}</span>
-                  )}
-                  {/* Exibir Estrelas */}
-                  <div className="flex">
-                    {[...Array(comment.rating)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    ))}
-                    {[...Array(5 - comment.rating)].map((_, i) => (
-                      <Star key={i + comment.rating} className="h-4 w-4 text-gray-300" />
-                    ))}
+                    </div>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(comment.created_at).toLocaleDateString('pt-BR')}
-                </p>
+                <Button onClick={handleSubmitComment} disabled={loading} className="w-full">
+                  {loading ? 'Enviando...' : 'Enviar Comentário'}
+                </Button>
               </div>
-              <p className="text-sm text-gray-800">{comment.comment}</p>
             </CardContent>
           </Card>
-        ))}
-        {comments.length === 0 && !loading && (
-          <p className="text-sm text-muted-foreground">Nenhum comentário ainda. Seja o primeiro a comentar!</p>
-        )}
-        
-        {/* Botão Carregar Mais */}
-        {hasMoreComments && comments.length > 0 && (
-          <div className="text-center pt-4">
-            <Button 
-              variant="outline" 
-              onClick={loadMoreComments}
-              disabled={loading}
-              className="w-full sm:w-auto"
-            >
-              {loading ? 'Carregando...' : `Carregar mais comentários (${totalComments - comments.length} restantes)`}
-            </Button>
+
+          <div className="space-y-4">
+            {comments.map((comment) => (
+              <Card key={comment.id}>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
+                      {comment.instagram_handle && (
+                        <a href={`https://instagram.com/${comment.instagram_handle}`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-pink-600 hover:text-pink-700 hover:underline">
+                          @{comment.instagram_handle}
+                        </a>
+                      )}
+                      {comment.author_name && !comment.instagram_handle && (
+                        <span className="text-sm font-medium text-gray-700">{comment.author_name}</span>
+                      )}
+                      <div className="flex">
+                        {[...Array(comment.rating)].map((_, i) => (
+                          <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        ))}
+                        {[...Array(5 - comment.rating)].map((_, i) => (
+                          <Star key={i + comment.rating} className="h-4 w-4 text-gray-300" />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(comment.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-800">{comment.comment}</p>
+                </CardContent>
+              </Card>
+            ))}
+            {comments.length === 0 && !loading && (
+              <p className="text-sm text-muted-foreground">Nenhum comentário ainda. Seja o primeiro a comentar!</p>
+            )}
+            {hasMoreComments && comments.length > 0 && (
+              <div className="text-center pt-4">
+                <Button variant="outline" onClick={loadMoreComments} disabled={loading} className="w-full sm:w-auto">
+                  {loading ? 'Carregando...' : `Carregar mais comentários (${totalComments - comments.length} restantes)`}
+                </Button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      </>
+        </>
       )}
     </div>
   );

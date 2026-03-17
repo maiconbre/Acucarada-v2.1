@@ -2,10 +2,12 @@ import { IProductRepository } from '@/core/domain/repositories/IProductRepositor
 import { ICategoryRepository } from '@/core/domain/repositories/ICategoryRepository';
 import { IAppSettingsRepository } from '@/core/domain/repositories/IAppSettingsRepository';
 import { IProductAnalyticsRepository } from '@/core/domain/repositories/IProductAnalyticsRepository';
+import { ICommentRepository } from '@/core/domain/repositories/ICommentRepository';
 import { SupabaseProductRepository } from '@/core/data/repositories/SupabaseProductRepository';
 import { SupabaseCategoryRepository } from '@/core/data/repositories/SupabaseCategoryRepository';
 import { SupabaseAppSettingsRepository } from '@/core/data/repositories/SupabaseAppSettingsRepository';
 import { SupabaseProductAnalyticsRepository } from '@/core/data/repositories/SupabaseProductAnalyticsRepository';
+import { SupabaseCommentRepository } from '@/core/data/repositories/SupabaseCommentRepository';
 
 class Container {
     private static instance: Container;
@@ -13,6 +15,7 @@ class Container {
     private categoryRepository: ICategoryRepository | null = null;
     private appSettingsRepository: IAppSettingsRepository | null = null;
     private productAnalyticsRepository: IProductAnalyticsRepository | null = null;
+    private commentRepository: ICommentRepository | null = null;
 
     private constructor() { }
 
@@ -49,6 +52,13 @@ class Container {
             this.productAnalyticsRepository = new SupabaseProductAnalyticsRepository();
         }
         return this.productAnalyticsRepository;
+    }
+
+    getCommentRepository(): ICommentRepository {
+        if (!this.commentRepository) {
+            this.commentRepository = new SupabaseCommentRepository();
+        }
+        return this.commentRepository;
     }
 }
 
