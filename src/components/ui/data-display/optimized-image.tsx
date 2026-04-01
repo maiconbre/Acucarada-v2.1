@@ -10,6 +10,9 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   containerClassName?: string;
   onLoad?: () => void;
   onError?: () => void;
+  width?: number;
+  height?: number;
+  quality?: number;
 }
 
 export const OptimizedImage = ({
@@ -21,6 +24,9 @@ export const OptimizedImage = ({
   containerClassName,
   onLoad,
   onError,
+  width,
+  height,
+  quality = 75,
   ...props
 }: OptimizedImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -28,6 +34,9 @@ export const OptimizedImage = ({
   const [isInView, setIsInView] = useState(!lazy);
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const imageSrc = hasError ? fallbackSrc : src;
+
 
   // Intersection Observer para lazy loading
   useEffect(() => {
@@ -43,8 +52,9 @@ export const OptimizedImage = ({
         });
       },
       {
-        rootMargin: '50px', // Começar a carregar 50px antes de entrar na viewport
-        threshold: 0.1,
+        // Aumentado para 300px para garantir que imagens baixem antes do scroll chegar no 3G
+        rootMargin: '300px', 
+        threshold: 0.01,
       }
     );
 
@@ -65,8 +75,6 @@ export const OptimizedImage = ({
     onError?.();
   };
 
-  const imageSrc = hasError ? fallbackSrc : src;
-
   return (
     <div
       ref={containerRef}
@@ -75,23 +83,24 @@ export const OptimizedImage = ({
         containerClassName
       )}
     >
-      {/* Placeholder/Loading state */}
+      {/* Placeholder/Loading state visual */}
       {!isLoaded && (
         <div className="absolute inset-0 bg-gradient-to-br from-muted/30 to-muted/60 animate-pulse" />
       )}
 
-      {/* Imagem principal */}
+      {/* Imagem principal carregada sob demanda */}
       {isInView && (
         <img
           ref={imgRef}
           src={imageSrc}
           alt={alt}
+
           loading={lazy ? 'lazy' : 'eager'}
           decoding="async"
           onLoad={handleLoad}
           onError={handleError}
           className={cn(
-            'transition-opacity duration-300',
+            'transition-opacity duration-500',
             isLoaded ? 'opacity-100' : 'opacity-0',
             className
           )}
